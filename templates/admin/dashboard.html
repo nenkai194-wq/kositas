@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Admin - KOSITAS BPS Tasikmalaya{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header Banner -->
+  <div class="bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+    <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+      <i class="fa-solid fa-coins text-9xl"></i>
+    </div>
+    
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-700/60 text-emerald-200 mb-2 border border-emerald-600/30">
+          <i class="fa-solid fa-circle-check"></i>
+          Sistem Entri KOSITAS Aktif • Tahun Buku 2026
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          Selamat Datang, {{ current_user.nama }}
+        </h1>
+        <p class="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl">
+          Pengelolaan Simpan Pinjam Syariah Koperasi Pegawai BPS Kabupaten Tasikmalaya. Pantau transaksi, rekap bulanan, dan posisi keuangan secara real-time.
+        </p>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex flex-wrap gap-2 sm:gap-2.5">
+        <a href="{{ url_for('admin_simpanan') }}" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-xs shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-plus-circle"></i>
+          Entri Simpanan
+        </a>
+        <a href="{{ url_for('admin_tabungan_khusus') }}" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xs shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-kaaba"></i>
+          Tabungan Hari Raya
+        </a>
+        <a href="{{ url_for('admin_pinjaman_tambah') }}" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+          Pinjaman Baru
+        </a>
+        <a href="{{ url_for('admin_rekap_bulanan') }}" class="px-3 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-calendar-check"></i>
+          Potong Gaji
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Card 1: Total Simpanan -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Simpanan</span>
+        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <i class="fa-solid fa-wallet text-sm"></i>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-extrabold text-slate-900">{{ stats.total_simpanan|rupiah }}</div>
+        <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+          <span class="text-emerald-700 font-semibold">Wajib: {{ stats.simpanan_breakdown.wajib|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Total Piutang Pinjaman -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Piutang Pinjaman</span>
+        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <i class="fa-solid fa-hand-holding-dollar text-sm"></i>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-extrabold text-slate-900">{{ stats.total_piutang|rupiah }}</div>
+        <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+          <span class="text-indigo-600 font-semibold">{{ stats.jml_pinjaman_aktif }} kontrak aktif</span> (JAPAN, JAPEN, Bon Putih)
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Likuiditas (Kas & Bank) -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Kas & Bank Koperasi</span>
+        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+          <i class="fa-solid fa-building-columns text-sm"></i>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-extrabold text-slate-900">{{ (stats.kas_estimasi + stats.bank_estimasi)|rupiah }}</div>
+        <div class="text-xs text-slate-500 mt-1">
+          Kas: {{ stats.kas_estimasi|rupiah }} • Bank BSI: {{ stats.bank_estimasi|rupiah }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Anggota Aktif & SHU -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Anggota & Proyeksi SHU</span>
+        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+          <i class="fa-solid fa-users text-sm"></i>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-extrabold text-slate-900">{{ stats.total_anggota_aktif }} <span class="text-sm font-semibold text-slate-500">Anggota</span></div>
+        <div class="text-xs text-slate-500 mt-1">
+          SHU Bagian Anggota: <span class="font-bold text-amber-700">{{ shu.alokasi.shu_bagian_anggota|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS: BREAKDOWN SIMPANAN & PIUTANG -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Simpanan Breakdown -->
+    <div class="lg:col-span-6 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Komposisi Simpanan KOSITAS</h3>
+          <p class="text-xs text-slate-500">Distribusi Saldo Simpanan Anggota</p>
+        </div>
+        <a href="{{ url_for('admin_laporan_simpanan') }}" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+          Lihat Rekap <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+      </div>
+      <div class="h-64 flex items-center justify-center">
+        <canvas id="chartSimpanan"></canvas>
+      </div>
+      <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-4 pt-4 border-t border-slate-100 text-center">
+        <div>
+          <span class="text-[10px] text-slate-400 block">Pokok</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.simpanan_breakdown.pokok|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">Wajib</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.simpanan_breakdown.wajib|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">Lebaran</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.simpanan_breakdown.lebaran|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">Qurban</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.simpanan_breakdown.qurban|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">Manasuka</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.simpanan_breakdown.manasuka|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Piutang Breakdown -->
+    <div class="lg:col-span-6 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Komposisi Portofolio Piutang</h3>
+          <p class="text-xs text-slate-500">Saldo Berjalan Pinjaman Berdasarkan Jenis</p>
+        </div>
+        <a href="{{ url_for('admin_laporan_piutang') }}" class="text-xs font-semibold text-indigo-700 hover:text-indigo-800">
+          Lihat Piutang <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+      </div>
+      <div class="h-64 flex items-center justify-center">
+        <canvas id="chartPiutang"></canvas>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-4 border-t border-slate-100 text-center">
+        <div>
+          <span class="text-[10px] text-slate-400 block">JAPAN</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.piutang_breakdown.japan|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">JAPEN</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.piutang_breakdown.japen|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">Bon Putih</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.piutang_breakdown.bon_putih|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">Barang</span>
+          <span class="text-xs font-bold text-slate-700">{{ stats.piutang_breakdown.barang|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENDING PENGAJUAN ONLINE ANGGOTA -->
+  {% if pengajuan_pending %}
+  <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center space-x-2">
+        <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center text-xs">
+          <i class="fa-solid fa-bell"></i>
+        </span>
+        <h3 class="text-sm font-bold text-amber-900">Pengajuan Anggota Menunggu Verifikasi ({{ pengajuan_pending|length }})</h3>
+      </div>
+      <span class="text-xs font-semibold text-amber-700">Perlu Tindakan Pengurus</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="text-amber-800 uppercase text-[10px] border-b border-amber-200 font-bold">
+          <tr>
+            <th class="py-2">No Pengajuan</th>
+            <th class="py-2">Nama Anggota</th>
+            <th class="py-2">Jenis / Kategori</th>
+            <th class="py-2 text-right">Nominal</th>
+            <th class="py-2">Keperluan / Alasan</th>
+            <th class="py-2 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-amber-200/60">
+          {% for req in pengajuan_pending %}
+          <tr class="hover:bg-amber-100/40">
+            <td class="py-2.5 font-mono font-bold text-slate-800">{{ req.no_pengajuan }}</td>
+            <td class="py-2.5 font-bold text-slate-800">{{ req.nama_anggota }} ({{ req.no_anggota }})</td>
+            <td class="py-2.5">
+              <span class="px-2 py-0.5 rounded font-semibold bg-white border border-amber-300 text-amber-900">
+                {{ req.jenis }}: {{ req.kategori }} {% if req.tenor_bulan > 1 %}({{ req.tenor_bulan }} bln){% endif %}
+              </span>
+            </td>
+            <td class="py-2.5 text-right font-bold text-slate-900">{{ req.nominal|rupiah }}</td>
+            <td class="py-2.5 text-slate-600 max-w-xs truncate">{{ req.alasan }}</td>
+            <td class="py-2.5 text-center">
+              <form method="POST" action="{{ url_for('admin_pengajuan_proses', id=req.id) }}" class="inline-flex gap-1.5">
+                <button type="submit" name="action" value="TERIMA" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition">
+                  <i class="fa-solid fa-check mr-0.5"></i> Setujui
+                </button>
+                <button type="submit" name="action" value="TOLAK" class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition">
+                  <i class="fa-solid fa-xmark mr-0.5"></i> Tolak
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- TWO COLUMNS: TRANSAKSI TERAKHIR & PINJAMAN AKTIF -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Kolom 1: Transaksi Simpanan Terbaru -->
+    <div class="lg:col-span-6 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Transaksi Simpanan Terbaru</h3>
+          <p class="text-xs text-slate-500">Mutasi Setor dan Tarik Terakhir</p>
+        </div>
+        <a href="{{ url_for('admin_simpanan') }}" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+          Entri Baru <i class="fa-solid fa-plus text-[10px]"></i>
+        </a>
+      </div>
+
+      <div class="space-y-3">
+        {% for trx in recent_savings %}
+        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition border border-slate-100">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg {% if trx.tipe == 'SETOR' %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %} flex items-center justify-center font-bold text-xs shrink-0">
+              <i class="fa-solid {% if trx.tipe == 'SETOR' %}fa-arrow-down{% else %}fa-arrow-up{% endif %}"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800">{{ trx.nama_anggota }}</div>
+              <div class="text-[11px] text-slate-500">
+                <span class="font-semibold text-emerald-700">{{ trx.jenis_simpanan }}</span> • {{ trx.tanggal|format_date }} • {{ trx.metode_bayar }}
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-extrabold {% if trx.tipe == 'SETOR' %}text-emerald-700{% else %}text-red-600{% endif %}">
+              {% if trx.tipe == 'SETOR' %}+{% else %}-{% endif %}{{ trx.nominal|rupiah }}
+            </div>
+            <a href="{{ url_for('cetak_kuitansi_simpanan', id=trx.id) }}" target="_blank" class="text-[10px] text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-print"></i> Kuitansi
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Kolom 2: Pinjaman Aktif Terbaru -->
+    <div class="lg:col-span-6 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Pinjaman Berjalan</h3>
+          <p class="text-xs text-slate-500">Daftar Kontrak Pinjaman Berstatus Aktif</p>
+        </div>
+        <a href="{{ url_for('admin_pinjaman_list') }}" class="text-xs font-semibold text-indigo-700 hover:text-indigo-800">
+          Lihat Semua <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+      </div>
+
+      <div class="space-y-3">
+        {% for pj in active_loans %}
+        <div class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition border border-slate-100 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold 
+                {% if pj.jenis_pinjaman == 'JAPAN' %}bg-purple-100 text-purple-800
+                {% elif pj.jenis_pinjaman == 'JAPEN' %}bg-blue-100 text-blue-800
+                {% elif pj.jenis_pinjaman == 'Bon Putih' %}bg-amber-100 text-amber-800
+                {% else %}bg-teal-100 text-teal-800{% endif %}">
+                {{ pj.jenis_pinjaman }}
+              </span>
+              <span class="text-xs font-bold text-slate-800">{{ pj.nama_anggota }}</span>
+            </div>
+            <span class="text-xs font-extrabold text-indigo-700">{{ pj.saldo_pokok|rupiah }}</span>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Tenor: {{ pj.tenor_bulan }} bln (Cicilan ke-{{ pj.angsuran_ke }})</span>
+            <span>Angsuran: {{ pj.total_angsuran_bulanan|rupiah }}/bln</span>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-indigo-600 h-1.5 rounded-full" style="width: {{ pj.persen_lunas }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Chart Simpanan
+  const ctxSimp = document.getElementById('chartSimpanan').getContext('2d');
+  new Chart(ctxSimp, {
+    type: 'doughnut',
+    data: {
+      labels: ['Pokok', 'Wajib', 'Lebaran', 'Qurban', 'Manasuka'],
+      datasets: [{
+        data: [
+          {{ stats.simpanan_breakdown.pokok }},
+          {{ stats.simpanan_breakdown.wajib }},
+          {{ stats.simpanan_breakdown.lebaran }},
+          {{ stats.simpanan_breakdown.qurban }},
+          {{ stats.simpanan_breakdown.manasuka }}
+        ],
+        backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: function(c) {
+              return ' ' + c.label + ': Rp ' + Number(c.raw).toLocaleString('id-ID');
+            }
+          }
+        }
+      },
+      cutout: '68%'
+    }
+  });
+
+  // Chart Piutang
+  const ctxPj = document.getElementById('chartPiutang').getContext('2d');
+  new Chart(ctxPj, {
+    type: 'doughnut',
+    data: {
+      labels: ['JAPAN (Jangka Panjang)', 'JAPEN (Jangka Pendek)', 'Bon Putih (Lainnya)', 'Barang'],
+      datasets: [{
+        data: [
+          {{ stats.piutang_breakdown.japan }},
+          {{ stats.piutang_breakdown.japen }},
+          {{ stats.piutang_breakdown.bon_putih }},
+          {{ stats.piutang_breakdown.barang }}
+        ],
+        backgroundColor: ['#4f46e5', '#3b82f6', '#f59e0b', '#06b6d4'],
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: function(c) {
+              return ' ' + c.label + ': Rp ' + Number(c.raw).toLocaleString('id-ID');
+            }
+          }
+        }
+      },
+      cutout: '68%'
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Master Data Anggota - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Top Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-extrabold text-slate-900">Master Data Anggota</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+          {{ members|length }} Terdaftar
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Daftar seluruh anggota Koperasi Statistik Tasikmalaya (KOSITAS BPS)</p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <a href="{{ url_for('admin_anggota_tambah') }}" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 transition flex items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i>
+        Tambah Anggota Baru
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <!-- Filter Status -->
+    <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
+      <a href="{{ url_for('admin_anggota_list', status='Semua', search=search) }}" 
+         class="px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_status == 'Semua' %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+        Semua
+      </a>
+      <a href="{{ url_for('admin_anggota_list', status='Aktif', search=search) }}" 
+         class="px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_status == 'Aktif' %}bg-emerald-700 text-white{% else %}bg-emerald-50 text-emerald-700 hover:bg-emerald-100{% endif %}">
+        Aktif
+      </a>
+      <a href="{{ url_for('admin_anggota_list', status='Keluar', search=search) }}" 
+         class="px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_status == 'Keluar' %}bg-red-700 text-white{% else %}bg-red-50 text-red-700 hover:bg-red-100{% endif %}">
+        Keluar / Non-aktif
+      </a>
+    </div>
+
+    <!-- Search Form -->
+    <form method="GET" action="{{ url_for('admin_anggota_list') }}" class="flex items-center gap-2 w-full md:w-80">
+      <input type="hidden" name="status" value="{{ current_status }}">
+      <div class="relative w-full">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </span>
+        <input type="text" name="search" value="{{ search }}" placeholder="Cari nama, No Anggota, NIP..."
+               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+      </div>
+      <button type="submit" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition">
+        Cari
+      </button>
+    </form>
+  </div>
+
+  <!-- Members Table -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4 text-center w-12">No</th>
+            <th class="py-3 px-4">No Anggota</th>
+            <th class="py-3 px-4">Nama Lengkap</th>
+            <th class="py-3 px-4">Jabatan</th>
+            <th class="py-3 px-4">NIP / JK</th>
+            <th class="py-3 px-4 text-right">Total Simpanan</th>
+            <th class="py-3 px-4 text-right">Sisa Piutang</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-center w-36">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for m in members %}
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-3 px-4 text-center text-slate-400 font-mono">{{ loop.index }}</td>
+            <td class="py-3 px-4 font-mono font-bold text-slate-700">{{ m.no_anggota }}</td>
+            <td class="py-3 px-4">
+              <a href="{{ url_for('admin_anggota_detail', id=m.id) }}" class="font-bold text-slate-900 hover:text-emerald-700 block">
+                {{ m.nama }}
+              </a>
+              <span class="text-[11px] text-slate-400">{{ m.no_hp or '-' }}</span>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold 
+                {% if 'Ketua' in m.jabatan %}bg-purple-100 text-purple-800
+                {% elif 'Sekretaris' in m.jabatan %}bg-blue-100 text-blue-800
+                {% elif 'Bendahara' in m.jabatan %}bg-emerald-100 text-emerald-800
+                {% elif 'Pemeriksa' in m.jabatan %}bg-amber-100 text-amber-800
+                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                {{ m.jabatan }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-slate-600">
+              <div>{{ m.nip or '-' }}</div>
+              <div class="text-[10px] text-slate-400">{{ m.jenis_kelamin }}</div>
+            </td>
+            <td class="py-3 px-4 text-right font-bold text-emerald-700 font-mono">
+              {{ m.total_simpanan|rupiah }}
+            </td>
+            <td class="py-3 px-4 text-right font-bold {% if m.total_piutang > 0 %}text-indigo-600{% else %}text-slate-400{% endif %} font-mono">
+              {{ m.total_piutang|rupiah }}
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if m.status == 'Aktif' %}bg-emerald-100 text-emerald-800{% else %}bg-red-100 text-red-700{% endif %}">
+                {{ m.status }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <div class="inline-flex items-center gap-1.5">
+                <a href="{{ url_for('admin_anggota_detail', id=m.id) }}" title="Lihat Profil & Buku Tabungan" 
+                   class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-800 flex items-center justify-center transition">
+                  <i class="fa-regular fa-eye"></i>
+                </a>
+                <a href="{{ url_for('admin_anggota_edit', id=m.id) }}" title="Edit Data" 
+                   class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-800 flex items-center justify-center transition">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                <a href="{{ url_for('switch_user', user_id=m.id) }}" title="Login Sebagai Anggota Ini" 
+                   class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center transition">
+                  <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="py-8 text-center text-slate-400 text-xs">
+              <i class="fa-solid fa-inbox text-3xl mb-2 block"></i>
+              Tidak ada data anggota ditemukan.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Form Penerimaan Estimasi SHU - {{ shu.member.nama }} - KOSITAS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background-color: #fff !important; }
+      .slip-container { border: 2px solid #065f46 !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 p-4 sm:p-8 min-h-screen text-slate-800">
+
+  <!-- Action Bar -->
+  <div class="max-w-3xl mx-auto mb-4 flex justify-between items-center no-print">
+    <button onclick="window.history.back()" class="px-4 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-sm hover:bg-slate-50 transition">
+      &larr; Kembali
+    </button>
+    <button onclick="window.print()" class="px-5 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center gap-1.5">
+      Cetak Formulir Penerimaan SHU
+    </button>
+  </div>
+
+  <!-- Container Slip Formal -->
+  <div class="slip-container max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-emerald-800 p-8 sm:p-10 space-y-6">
+    
+    <!-- Kop Surat KOSITAS -->
+    <div class="text-center pb-4 border-b-2 border-slate-800">
+      <div class="flex items-center justify-center space-x-3 mb-1">
+        <div class="w-12 h-12 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-extrabold text-xl shadow">
+          K
+        </div>
+        <div class="text-left">
+          <h1 class="text-base font-extrabold text-slate-900 tracking-wider">KOPERASI STATISTIK TASIKMALAYA (KOSITAS)</h1>
+          <p class="text-xs text-slate-600 font-semibold">BADAN PUSAT STATISTIK KABUPATEN TASIKMALAYA</p>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-500">Jl. Raya Timur Singaparna KM. 4 Cintaraja, Kec. Singaparna, Tasikmalaya - Jawa Barat</p>
+      
+      <div class="mt-4">
+        <h2 class="text-sm font-extrabold text-emerald-950 uppercase tracking-widest underline">
+          FORMULIR BUKTI PENERIMAAN ESTIMASI SISA HASIL USAHA (SHU)
+        </h2>
+        <p class="text-[11px] text-slate-500 font-mono mt-0.5">
+          Nomor: SHU-EST/KST/{{ tahun }}{{ '%02d'|format(bulan) }}/{{ shu.member.no_anggota }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Data Identitas Anggota -->
+    <div class="text-xs text-slate-700 space-y-4 leading-relaxed">
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-3">
+        <div>
+          <span class="text-slate-500 block">Nama Anggota:</span>
+          <span class="font-bold text-slate-900 text-sm">{{ shu.member.nama }}</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">Nomor Anggota / NIP:</span>
+          <span class="font-mono font-bold text-slate-800">{{ shu.member.no_anggota }} / {{ shu.member.nip or '-' }}</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">Jabatan di BPS:</span>
+          <span class="text-slate-700 font-semibold">{{ shu.member.jabatan }}</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">Periode Perhitungan:</span>
+          <span class="font-bold text-amber-800">
+            {% if mode == 'berjalan' %}
+              s/d {{ shu.nama_bulan }} {{ tahun }} (Akrual Bulan ke-{{ bulan }})
+            {% else %}
+              Tahun Buku {{ tahun }} (Proyeksi 12 Bulan Penuh)
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <p class="text-slate-600">
+        Berdasarkan Anggaran Dasar KOSITAS (RAT Halaman 13, 24, 25), alokasi SHU Bagian Anggota (40% dari Total SHU Bruto Koperasi Rp {{ shu.total_shu_bruto|rupiah }}) dibagi atas <strong>50% Jasa Modal</strong> dan <strong>50% Jasa Pinjaman</strong> dengan rincian penerimaan sebagai berikut:
+      </p>
+
+      <!-- Tabel Rincian Hak SHU -->
+      <table class="w-full text-xs text-left border border-slate-200 rounded-lg">
+        <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-2.5 px-3">Komponen Alokasi SHU</th>
+            <th class="py-2.5 px-3 text-right">Partisipasi Anggota</th>
+            <th class="py-2.5 px-3 text-right">Total Koperasi</th>
+            <th class="py-2.5 px-3 text-center">Porsi (%)</th>
+            <th class="py-2.5 px-3 text-right">Alokasi Koperasi</th>
+            <th class="py-2.5 px-3 text-right bg-amber-50">Estimasi Hak Anggota</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <!-- Jasa Modal -->
+          <tr>
+            <td class="py-2.5 px-3">
+              <span class="font-bold text-slate-800 block">1. Jasa Modal (50%)</span>
+              <span class="text-[10px] text-slate-400">Total Simpanan Anggota</span>
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+              {{ shu.member.total_simpanan|rupiah }}
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-500">
+              {{ shu.partisipasi.total_simpanan_koperasi|rupiah }}
+            </td>
+            <td class="py-2.5 px-3 text-center font-mono font-bold text-slate-700">
+              {{ shu.partisipasi.persen_modal }}%
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-500">
+              {{ shu.koperasi_alokasi.jasa_modal_total|rupiah }}
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-800 bg-amber-50/50">
+              {% if mode == 'berjalan' %}
+                {{ shu.shu_sd_bulan.jasa_modal|rupiah }}
+              {% else %}
+                {{ shu.shu_tahunan.jasa_modal|rupiah }}
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Jasa Pinjaman -->
+          <tr>
+            <td class="py-2.5 px-3">
+              <span class="font-bold text-slate-800 block">2. Jasa Pinjaman (50%)</span>
+              <span class="text-[10px] text-slate-400">Total Margin Bunga Disetor</span>
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+              {{ shu.member.total_jasa_pinjaman_dibayar|rupiah }}
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-500">
+              {{ shu.partisipasi.total_jasa_koperasi|rupiah }}
+            </td>
+            <td class="py-2.5 px-3 text-center font-mono font-bold text-slate-700">
+              {{ shu.partisipasi.persen_pinjaman }}%
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-500">
+              {{ shu.koperasi_alokasi.jasa_pinjaman_total|rupiah }}
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-800 bg-amber-50/50">
+              {% if mode == 'berjalan' %}
+                {{ shu.shu_sd_bulan.jasa_pinjaman|rupiah }}
+              {% else %}
+                {{ shu.shu_tahunan.jasa_pinjaman|rupiah }}
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Total Diterima -->
+          <tr class="bg-amber-100/70 border-t-2 border-amber-300">
+            <td colspan="5" class="py-3 px-3 font-extrabold text-amber-950">
+              TOTAL ESTIMASI PENERIMAAN SHU
+              <span class="block text-[10px] font-normal text-slate-600">
+                {% if mode == 'berjalan' %}
+                  Prorata Akrual s/d {{ shu.nama_bulan }} {{ tahun }} ({{ bulan }}/12 Bulan)
+                {% else %}
+                  Estimasi Proyeksi 1 Tahun Buku Penuh (12 Bulan)
+                {% endif %}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-base text-amber-950">
+              {% if mode == 'berjalan' %}
+                {{ shu.shu_sd_bulan.total_shu|rupiah }}
+              {% else %}
+                {{ shu.shu_tahunan.total_shu|rupiah }}
+              {% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Terbilang -->
+      <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+        <span class="font-bold text-slate-700 block text-[11px]">Terbilang:</span>
+        <span class="font-bold italic text-slate-800 text-xs">
+          "{% if mode == 'berjalan' %}{{ shu.shu_sd_bulan.terbilang }}{% else %}{{ shu.shu_tahunan.terbilang }}{% endif %}"
+        </span>
+      </div>
+
+      <p class="text-[11px] text-slate-500 italic">
+        * Catatan: Nilai pada formulir ini merupakan estimasi proporsional berjalan dan akan disahkan secara definitif pada Rapat Anggota Tahunan (RAT) penutupan tahun buku KOSITAS.
+      </p>
+    </div>
+
+    <!-- Tanda Tangan Tiga Pihak -->
+    <div class="pt-6 grid grid-cols-3 gap-6 text-center text-xs">
+      <div>
+        <p class="text-slate-500">Anggota Penerima,</p>
+        <div class="h-16"></div>
+        <p class="font-bold text-slate-900 underline">{{ shu.member.nama }}</p>
+        <p class="text-[10px] text-slate-400 font-mono">{{ shu.member.no_anggota }}</p>
+      </div>
+
+      <div>
+        <p class="text-slate-500">Bendahara KOSITAS,</p>
+        <div class="h-16"></div>
+        <p class="font-bold text-slate-900 underline">Erlina Hardiyanti, A.Md</p>
+        <p class="text-[10px] text-slate-400">Bendahara Pengurus</p>
+      </div>
+
+      <div>
+        <p class="text-slate-500">Mengetahui, Ketua KOSITAS</p>
+        <div class="h-16"></div>
+        <p class="font-bold text-slate-900 underline">Gilang Abdul Aziz, SE, MP</p>
+        <p class="text-[10px] text-slate-400">Ketua Pengurus</p>
+      </div>
+    </div>
+
+    <!-- Footer Catatan Dokumen -->
+    <div class="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+      Dokumen ini sah dan diterbitkan secara digital oleh Sistem Informasi Koperasi Statistik Tasikmalaya (KOSITAS) BPS Kab. Tasikmalaya.
+    </div>
+
+  </div>
+
+</body>
+</html>

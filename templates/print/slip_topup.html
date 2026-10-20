@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Bukti Realisasi Top Up Pembiayaan - {{ loan.nama_anggota }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background-color: #fff !important; }
+      .topup-container { border: 2px solid #3730a3 !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 p-4 sm:p-8 min-h-screen text-slate-800">
+
+  <div class="max-w-2xl mx-auto mb-4 flex justify-between items-center no-print">
+    <button onclick="window.history.back()" class="px-4 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-sm hover:bg-slate-50 transition">
+      &larr; Kembali
+    </button>
+    <button onclick="window.print()" class="px-5 py-2 bg-indigo-700 text-white text-xs font-bold rounded-xl shadow hover:bg-indigo-800 transition flex items-center gap-1.5">
+      Cetak Bukti Realisasi Top Up
+    </button>
+  </div>
+
+  <div class="topup-container max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-indigo-900 p-8 sm:p-10 space-y-6">
+    
+    <!-- Kop Surat KOSITAS -->
+    <div class="text-center pb-4 border-b-2 border-slate-800">
+      <div class="flex items-center justify-center space-x-3 mb-1">
+        <div class="w-12 h-12 rounded-xl bg-indigo-900 text-white flex items-center justify-center font-extrabold text-xl">
+          K
+        </div>
+        <div class="text-left">
+          <h1 class="text-base font-extrabold text-slate-900 tracking-wider">KOPERASI STATISTIK TASIKMALAYA (KOSITAS)</h1>
+          <p class="text-xs text-slate-600 font-semibold">BPS KABUPATEN TASIKMALAYA</p>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-500">Jl. Raya Timur Singaparna KM. 4 Cintaraja, Kec. Singaparna, Tasikmalaya - Jawa Barat</p>
+      
+      <div class="mt-4">
+        <h2 class="text-sm font-extrabold text-indigo-950 uppercase tracking-widest underline">
+          BUKTI REALISASI TOP UP PEMBIAYAAN SYARIAH
+        </h2>
+        <p class="text-[11px] text-slate-500 font-mono mt-0.5">Nomor Kontrak Baru: {{ loan.no_pinjaman }}</p>
+      </div>
+    </div>
+
+    <!-- Data Anggota -->
+    <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div>
+        <span class="text-slate-400 text-[10px] block">Nama Anggota:</span>
+        <span class="font-bold text-slate-900 text-sm">{{ loan.nama_anggota }}</span>
+        <span class="text-[11px] text-slate-500 block">{{ loan.jabatan }}</span>
+      </div>
+      <div class="text-right">
+        <span class="text-slate-400 text-[10px] block">No. Anggota / NIP:</span>
+        <span class="font-mono font-bold text-slate-800">{{ loan.no_anggota }} / {{ loan.nip or '-' }}</span>
+        <span class="text-[11px] text-slate-500 block">Tanggal Akad: {{ loan.tanggal_cair|format_date }}</span>
+      </div>
+    </div>
+
+    <!-- Rincian Top Up -->
+    <div class="space-y-3 text-xs text-slate-700">
+      <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+        <div class="flex justify-between items-center">
+          <span class="font-bold text-indigo-950">Pelunasan Pinjaman Sebelumnya:</span>
+          <span class="font-mono font-bold text-indigo-900">{{ loan.no_pinjaman_lama or '-' }}</span>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-indigo-800 mt-1">
+          <span>Status Pinjaman Lama:</span>
+          <span class="font-bold text-emerald-700">LUNAS DI-TOP UP</span>
+        </div>
+      </div>
+
+      <table class="w-full text-xs text-left border border-slate-200 rounded-xl divide-y divide-slate-100">
+        <tr class="bg-slate-50">
+          <td class="py-2.5 px-3 font-semibold text-slate-700">Plafon Pinjaman Baru ({{ loan.jenis_pinjaman }})</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{{ loan.plafon_pokok|rupiah }}</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 px-3 text-slate-600">Pelunasan Sisa Pokok Pinjaman Lama</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-red-600">- {{ sisa_lama|rupiah }}</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 px-3 text-slate-600">Biaya Provisi Kredit (1%)</td>
+          <td class="py-2.5 px-3 text-right font-mono text-slate-700">- {{ loan.biaya_provisi|rupiah }}</td>
+        </tr>
+        {% if loan.biaya_drk > 0 %}
+        <tr>
+          <td class="py-2.5 px-3 text-slate-600">Dana Risiko Kredit (DRK 0.5%)</td>
+          <td class="py-2.5 px-3 text-right font-mono text-slate-700">- {{ loan.biaya_drk|rupiah }}</td>
+        </tr>
+        {% endif %}
+        <tr class="bg-emerald-50 text-emerald-950 font-bold border-t-2 border-emerald-300">
+          <td class="py-3 px-3 uppercase text-xs">UANG BERSIH DITERIMA ANGGOTA:</td>
+          <td class="py-3 px-3 text-right font-mono text-base font-extrabold text-emerald-900">{{ dana_bersih|rupiah }}</td>
+        </tr>
+      </table>
+
+      <!-- Jadwal Cicilan Baru -->
+      <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+        <div>
+          <span class="text-slate-400 text-[10px] block">Tenor Baru:</span>
+          <span class="font-bold text-slate-800">{{ loan.tenor_bulan }} Bulan</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">Margin Koperasi:</span>
+          <span class="font-bold text-slate-800">{{ loan.margin_persen }}% ({{ loan.margin_nominal|rupiah }})</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">Potongan Gaji / Bulan:</span>
+          <span class="font-extrabold text-indigo-900 font-mono">{{ loan.total_angsuran_bulanan|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tanda Tangan -->
+    <div class="pt-8 border-t border-slate-200 grid grid-cols-3 gap-4 text-center text-xs text-slate-700">
+      <div>
+        <p class="text-slate-500">Anggota Peminjam,</p>
+        <div class="h-14"></div>
+        <p class="font-bold underline">{{ loan.nama_anggota }}</p>
+      </div>
+
+      <div>
+        <p class="text-slate-500">Bendahara KOSITAS,</p>
+        <div class="h-14"></div>
+        <p class="font-bold underline">ERLINA HARDIYANTI, A.Md.</p>
+      </div>
+
+      <div>
+        <p class="text-slate-500">Ketua KOSITAS,</p>
+        <div class="h-14"></div>
+        <p class="font-bold underline">GILANG ABDUL AZIZ, SE, MP.</p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

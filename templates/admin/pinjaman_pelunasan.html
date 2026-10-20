@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Pelunasan Dipercepat - Pinjaman {{ loan.no_pinjaman }} - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4">
+
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Pelunasan Pinjaman Dipercepat</h1>
+      <p class="text-xs text-slate-500 mt-1">Pembayaran lunas sisa pokok kredit sekaligus sebelum jatuh tempo tempo</p>
+    </div>
+    <a href="{{ url_for('admin_pinjaman_detail', id=loan.id) }}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+      <i class="fa-solid fa-arrow-left"></i> Kembali
+    </a>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+
+    <!-- Info Pinjaman Saat Ini -->
+    <div class="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
+      <div class="flex justify-between items-start">
+        <div>
+          <span class="text-xs font-bold text-emerald-950 block">{{ loan.nama_anggota }} ({{ loan.no_anggota }})</span>
+          <span class="text-[11px] text-emerald-700 font-mono">{{ loan.no_pinjaman }} • {{ loan.jenis_pinjaman }}</span>
+        </div>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-700 text-white">
+          Cicilan Berjalan: Ke-{{ loan.angsuran_ke }} dari {{ loan.tenor_bulan }}
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs border-t border-emerald-200/60 pt-2.5">
+        <div>
+          <span class="text-[10px] text-emerald-800/70 block">Plafon Pokok Awal:</span>
+          <span class="font-bold text-emerald-950 font-mono">{{ loan.plafon_pokok|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-emerald-800/70 block font-bold">Sisa Pokok Hutang:</span>
+          <span class="font-extrabold text-emerald-900 font-mono text-sm">{{ loan.saldo_pokok|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-emerald-800/70 block">Sisa Margin Ke Depan:</span>
+          <span class="font-bold text-emerald-950 font-mono">{{ loan.saldo_margin|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kebijakan Koperasi Syariah KOSITAS -->
+    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-2">
+      <i class="fa-solid fa-circle-info text-emerald-600 mt-0.5"></i>
+      <div>
+        <span class="font-bold text-slate-800">Kebijakan Koperasi Syariah KOSITAS:</span>
+        <p class="text-[11px] text-slate-500 mt-0.5">
+          Pada pelunasan dipercepat, anggota hanya diwajibkan melunasi sisa saldo pokok. Pengurus dapat memberikan diskon/keringanan margin (Ibra') untuk sisa margin periode ke depan. Setelah lunas, pinjaman <strong>tidak akan dipotong lagi</strong> pada pemotongan gaji rutin bulanan.
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Input Pelunasan -->
+    <form method="POST" class="space-y-4">
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Pelunasan <span class="text-red-500">*</span></label>
+          <input type="date" name="tanggal_lunas" value="{{ current_month }}-01" required
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Metode Pembayaran</label>
+          <select name="metode_bayar" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <option value="Potong Gaji">Potong Gaji (Payroll)</option>
+            <option value="Potongan TK">Potongan TK (Tunjangan Kinerja)</option>
+            <option value="Tunai">Tunai ke Bendahara</option>
+            <option value="Transfer">Transfer Bank BSI</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Diskon / Keringanan Margin (Ibra')</label>
+          <input type="number" name="diskon_margin" id="inputDiskonMargin" value="{{ loan.saldo_margin }}" min="0" max="{{ loan.saldo_margin }}" step="100" oninput="calcPelunasan()"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          <p class="text-[10px] text-slate-400 mt-1">Default: dibebaskan dari seluruh sisa margin ke depan.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan Pelunasan</label>
+          <input type="text" name="keterangan" value="Pelunasan dipercepat pinjaman {{ loan.no_pinjaman }}"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <!-- Live Settlement Total Box -->
+      <div class="p-4 bg-emerald-900 text-white rounded-xl flex items-center justify-between">
+        <div>
+          <span class="text-xs text-emerald-200 block font-semibold">TOTAL PEMBAYARAN PELUNASAN:</span>
+          <span class="text-[11px] text-emerald-300">Sisa Pokok: {{ loan.saldo_pokok|rupiah }}</span>
+        </div>
+        <div id="txtTotalPelunasan" class="text-2xl font-extrabold text-emerald-300 font-mono">
+          {{ loan.saldo_pokok|rupiah }}
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <a href="{{ url_for('admin_pinjaman_detail', id=loan.id) }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </a>
+        <button type="submit" onclick="return confirm('Konfirmasi pelunasan dipercepat untuk pinjaman {{ loan.no_pinjaman }}? Pinjaman akan dinyatakan LUNAS dan tidak lagi dipotong dari gaji.')"
+                class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check-double"></i> Konfirmasi Pelunasan Lunas
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+<script>
+  function formatRupiah(num) {
+    return 'Rp ' + Number(Math.round(num)).toLocaleString('id-ID');
+  }
+
+  const sisaPokok = {{ loan.saldo_pokok }};
+  const sisaMargin = {{ loan.saldo_margin }};
+
+  function calcPelunasan() {
+    const diskon = parseFloat(document.getElementById('inputDiskonMargin').value || 0);
+    const marginBayar = Math.max(0, sisaMargin - diskon);
+    const total = sisaPokok + marginBayar;
+    document.getElementById('txtTotalPelunasan').textContent = formatRupiah(total);
+  }
+
+  calcPelunasan();
+</script>
+{% endblock %}

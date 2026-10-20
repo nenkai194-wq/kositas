@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}Rekap Transaksi Bulanan & Tahunan - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Toolbar -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-extrabold text-slate-900">
+          {% if periode_type == 'tahunan' %}
+          Rekapitulasi Transaksi Tahunan KOSITAS
+          {% else %}
+          Rekapitulasi Pemotongan Gaji Bulanan
+          {% endif %}
+        </h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if periode_type == 'tahunan' %}bg-purple-100 text-purple-900{% else %}bg-teal-100 text-teal-800{% endif %}">
+          {% if periode_type == 'tahunan' %}Tahun Buku: {{ tahun }}{% else %}Periode: {{ bulan_buku|bulan_indo }}{% endif %}
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Laporan pemotongan gaji rutin simpanan wajib, hari raya, dan angsuran pinjaman (kecuali pinjaman lunas/top-up)
+      </p>
+    </div>
+
+    <!-- Mode Selector & Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2.5 no-print">
+      
+      <!-- Filter Mode Tabs -->
+      <div class="bg-slate-200/80 p-1 rounded-xl flex items-center text-xs font-bold">
+        <a href="{{ url_for('admin_rekap_bulanan', periode_type='bulanan', bulan=bulan_buku or current_month) }}" 
+           class="px-3 py-1.5 rounded-lg transition {% if periode_type != 'tahunan' %}bg-white text-emerald-800 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+          <i class="fa-solid fa-calendar-day mr-1"></i> Bulanan
+        </a>
+        <a href="{{ url_for('admin_rekap_bulanan', periode_type='tahunan', tahun=tahun or current_year) }}" 
+           class="px-3 py-1.5 rounded-lg transition {% if periode_type == 'tahunan' %}bg-white text-purple-800 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+          <i class="fa-solid fa-calendar-days mr-1"></i> Tahunan Penuh
+        </a>
+      </div>
+
+      {% if periode_type == 'tahunan' %}
+      <!-- Selector Tahun -->
+      <form method="GET" class="flex items-center gap-1.5">
+        <input type="hidden" name="periode_type" value="tahunan">
+        <select name="tahun" onchange="this.form.submit()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-sm">
+          <option value="2025" {% if tahun == '2025' or tahun == 2025 %}selected{% endif %}>Tahun Buku 2025</option>
+          <option value="2026" {% if tahun == '2026' or tahun == 2026 %}selected{% endif %}>Tahun Buku 2026</option>
+          <option value="2027" {% if tahun == '2027' or tahun == 2027 %}selected{% endif %}>Tahun Buku 2027</option>
+        </select>
+      </form>
+
+      <a href="{{ url_for('admin_rekap_tahunan_export', tahun=tahun) }}" 
+         class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i> Unduh Excel Tahunan
+      </a>
+      {% else %}
+      <!-- Selector Bulan -->
+      <form method="GET" class="flex items-center gap-1.5">
+        <input type="hidden" name="periode_type" value="bulanan">
+        <input type="month" name="bulan" value="{{ bulan_buku }}" onchange="this.form.submit()"
+               class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      </form>
+
+      <!-- Tombol Eksekusi Potong Gaji Kolektif -->
+      {% if not billing_log %}
+      <form method="POST" action="{{ url_for('admin_rekap_bulanan_proses') }}" onsubmit="return confirm('Apakah Anda yakin ingin memproses pemotongan gaji kolektif untuk seluruh anggota pada periode {{ bulan_buku }}? Pinjaman yang lunas atau top-up otomatis dikecualikan.')">
+        <input type="hidden" name="bulan_buku" value="{{ bulan_buku }}">
+        <button type="submit" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-play"></i> Eksekusi Potong Gaji
+        </button>
+      </form>
+      {% else %}
+      <span class="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-300 flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+        Sudah Diproses ({{ billing_log.tanggal_proses|format_date }})
+      </span>
+      {% endif %}
+
+      <a href="{{ url_for('admin_rekap_bulanan_export', bulan=bulan_buku) }}" 
+         class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i> Unduh Excel
+      </a>
+      {% endif %}
+
+      <button onclick="window.print()" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-print"></i> Cetak A4
+      </button>
+
+    </div>
+  </div>
+
+  <!-- SUMMARY METRIC CARDS -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <!-- Card 1: Total Simpanan -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+        {% if periode_type == 'tahunan' %}Total Simpanan Tahun {{ tahun }}{% else %}Total Simpanan Bulan Ini{% endif %}
+      </span>
+      <div class="text-xl font-extrabold text-emerald-700 mt-1 font-mono">{{ rekap.total_simpanan|rupiah }}</div>
+      <div class="text-[10px] text-slate-500 mt-1">Wajib: {{ rekap.total_wajib|rupiah }} • Lebaran: {{ rekap.total_lebaran|rupiah }}</div>
+    </div>
+
+    <!-- Card 2: Total Angsuran Pokok -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Angsuran Pokok Pinjaman</span>
+      <div class="text-xl font-extrabold text-indigo-700 mt-1 font-mono">{{ rekap.total_angsuran_pokok|rupiah }}</div>
+      <div class="text-[10px] text-slate-500 mt-1">Pengembalian pokok piutang</div>
+    </div>
+
+    <!-- Card 3: Total Margin -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Margin / Jasa Koperasi</span>
+      <div class="text-xl font-extrabold text-amber-700 mt-1 font-mono">{{ rekap.total_angsuran_margin|rupiah }}</div>
+      <div class="text-[10px] text-slate-500 mt-1">Pendapatan jasa koperasi</div>
+    </div>
+
+    <!-- Card 4: Total Pemotongan -->
+    <div class="bg-gradient-to-br from-emerald-800 to-teal-900 text-white rounded-2xl p-4 shadow-md">
+      <span class="text-[10px] font-bold text-emerald-200 uppercase tracking-wider block">
+        {% if periode_type == 'tahunan' %}Total Pemotongan Gaji 1 Tahun{% else %}Total Potong Gaji Kolektif{% endif %}
+      </span>
+      <div class="text-2xl font-extrabold text-white mt-1 font-mono">{{ rekap.total_pemotongan|rupiah }}</div>
+      <div class="text-[10px] text-emerald-200 mt-1">{{ rekap.total_anggota }} anggota aktif diproses</div>
+    </div>
+  </div>
+
+  <!-- TABLE REKAPITULASI -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <div>
+        <h2 class="text-xs sm:text-sm font-bold text-slate-900">
+          {% if periode_type == 'tahunan' %}
+          Daftar Rincian Akumulasi Transaksi Anggota Tahun Buku {{ tahun }}
+          {% else %}
+          Daftar Rincian Pemotongan Gaji Anggota KOSITAS Periode {{ bulan_buku|bulan_indo }}
+          {% endif %}
+        </h2>
+        <p class="text-[11px] text-slate-500">
+          Potongan otomatis simpanan & cicilan (dikecualikan jika pinjaman telah lunas / top-up)
+        </p>
+      </div>
+      <span class="text-xs text-slate-500 font-mono font-bold">{{ rekap.anggota_list|length }} Anggota</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-3 text-center w-10">No</th>
+            <th class="py-3 px-3">No Anggota</th>
+            <th class="py-3 px-3">Nama Anggota</th>
+            <th class="py-3 px-3 text-right">Simp. Wajib</th>
+            <th class="py-3 px-3 text-right">Lebaran</th>
+            <th class="py-3 px-3 text-right">Qurban</th>
+            <th class="py-3 px-3 text-right font-bold text-emerald-800">Total Simpanan</th>
+            <th class="py-3 px-3 text-right">Angs. Pokok</th>
+            <th class="py-3 px-3 text-right">Jasa/Margin</th>
+            <th class="py-3 px-3 text-right font-extrabold text-slate-900 bg-slate-100/70">Total Potongan</th>
+            <th class="py-3 px-3">Catatan / Status</th>
+            <th class="py-3 px-3 text-center no-print">Slip</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for itm in rekap.anggota_list %}
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-2.5 px-3 text-center text-slate-400 font-mono">{{ loop.index }}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-slate-700">{{ itm.no_anggota }}</td>
+            <td class="py-2.5 px-3">
+              <a href="{{ url_for('admin_anggota_detail', id=itm.anggota_id) }}" class="font-bold text-slate-900 hover:text-emerald-700 block">
+                {{ itm.nama }}
+              </a>
+              <span class="text-[10px] text-slate-400">{{ itm.jabatan }}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono">{{ itm.simpanan_wajib|rupiah }}</td>
+            <td class="py-2.5 px-3 text-right font-mono">{{ itm.simpanan_lebaran|rupiah }}</td>
+            <td class="py-2.5 px-3 text-right font-mono">{{ itm.simpanan_qurban|rupiah }}</td>
+            <td class="py-2.5 px-3 text-right font-bold text-emerald-700 font-mono">{{ itm.total_simpanan|rupiah }}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-700">{{ itm.angsuran_pokok|rupiah }}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-slate-700">{{ itm.angsuran_margin|rupiah }}</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-slate-900 font-mono bg-slate-50/50">
+              {{ itm.total_potongan|rupiah }}
+            </td>
+            
+            <td class="py-2.5 px-3">
+              {% if itm.catatan_khusus %}
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 border border-amber-200 text-amber-900 block">
+                <i class="fa-solid fa-bell mr-0.5 text-amber-600"></i> {{ itm.catatan_khusus }}
+              </span>
+              {% elif periode_type != 'tahunan' %}
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if itm.status_bulan == 'Sudah Diproses' %}bg-emerald-100 text-emerald-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                {{ itm.status_bulan }}
+              </span>
+              {% else %}
+              <span class="text-[10px] text-slate-400">-</span>
+              {% endif %}
+            </td>
+
+            <td class="py-2.5 px-3 text-center no-print">
+              {% if periode_type != 'tahunan' %}
+              <div class="inline-flex items-center gap-1">
+                <a href="{{ url_for('cetak_slip_bulanan', anggota_id=itm.anggota_id, bulan_buku=bulan_buku) }}" target="_blank"
+                   title="Cetak Slip Rincian Potongan Gaji Koperasi"
+                   class="px-2 py-1 bg-slate-100 hover:bg-teal-100 text-slate-700 hover:text-teal-900 rounded text-[10px] font-bold border border-slate-200 transition inline-flex items-center gap-1">
+                  <i class="fa-solid fa-receipt"></i> Gaji
+                </a>
+                <a href="{{ url_for('cetak_slip_tabungan', anggota_id=itm.anggota_id, bulan_buku=bulan_buku) }}" target="_blank"
+                   title="Cetak Slip Setoran Tabungan Bulanan"
+                   class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded text-[10px] font-bold border border-emerald-200 transition inline-flex items-center gap-1">
+                  <i class="fa-solid fa-wallet"></i> Tabungan
+                </a>
+              </div>
+              {% else %}
+              <a href="{{ url_for('admin_anggota_detail', id=itm.anggota_id) }}" class="text-xs text-indigo-700 font-bold hover:underline">
+                Profil &rarr;
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-slate-100 text-slate-900 font-bold border-t-2 border-slate-300">
+          <tr>
+            <td colspan="3" class="py-3 px-3 text-center uppercase tracking-wider font-extrabold text-xs">
+              TOTAL KESELURUHAN ({{ rekap.anggota_list|length }} ANGGOTA)
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold">{{ rekap.total_wajib|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold">{{ rekap.total_lebaran|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold">{{ rekap.total_qurban|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-emerald-800 text-xs">{{ rekap.total_simpanan|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold">{{ rekap.total_angsuran_pokok|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold">{{ rekap.total_angsuran_margin|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-slate-950 text-xs bg-slate-200">
+              {{ rekap.total_pemotongan|rupiah }}
+            </td>
+            <td colspan="2" class="no-print"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

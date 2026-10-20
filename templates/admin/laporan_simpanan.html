@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Rekapitulasi Simpanan Anggota - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-extrabold text-slate-900">Rekapitulasi Simpanan Anggota</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+          Format RAT KOSITAS (Hal. 14-15)
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Laporan resmi akumulasi saldo Simpanan Pokok, Wajib, Lainnya, Lebaran, dan Qurban</p>
+    </div>
+
+    <div class="flex items-center gap-2.5 no-print">
+      <a href="{{ url_for('admin_laporan_simpanan_export') }}" 
+         class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i> Unduh Excel (.xlsx)
+      </a>
+      <button onclick="window.print()" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-print"></i> Cetak Format RAT
+      </button>
+    </div>
+  </div>
+
+  <!-- TABLE REKAPITULASI SIMPANAN RAT -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden p-6">
+    
+    <!-- Kop Resmi Dokumen -->
+    <div class="text-center pb-5 border-b border-slate-200 mb-5">
+      <h2 class="text-base font-extrabold text-slate-900 tracking-wide">KOSITAS</h2>
+      <h3 class="text-sm font-bold text-slate-700">KOPERASI STATISTIK TASIKMALAYA</h3>
+      <p class="text-xs text-slate-500">Jl. Raya Timur Singaparna KM. 4 Cintaraja - Tasikmalaya</p>
+      <div class="mt-2 text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 inline-block px-3 py-1 rounded-full border border-emerald-200">
+        REKAPITULASI SIMPANAN ANGGOTA
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left border-collapse">
+        <thead class="bg-slate-100 text-slate-700 font-bold border-y-2 border-slate-300">
+          <tr>
+            <th class="py-2.5 px-3 text-center w-10 border border-slate-200">No</th>
+            <th class="py-2.5 px-3 border border-slate-200">No Anggota</th>
+            <th class="py-2.5 px-3 border border-slate-200">Nama Anggota</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Simpanan Pokok</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Simpanan Wajib</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Simpanan Lainnya</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Simpanan Lebaran</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Simpanan Qurban</th>
+            <th class="py-2.5 px-3 text-right font-extrabold border border-slate-200 bg-slate-200/50">Jumlah Simpanan</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% set totals = namespace(pokok=0, wajib=0, lainnya=0, lebaran=0, qurban=0, semua=0) %}
+          {% for m in members %}
+          {% set totals.pokok = totals.pokok + m.simpanan_pokok %}
+          {% set totals.wajib = totals.wajib + m.simpanan_wajib %}
+          {% set totals.lainnya = totals.lainnya + m.simpanan_manasuka %}
+          {% set totals.lebaran = totals.lebaran + m.simpanan_lebaran %}
+          {% set totals.qurban = totals.qurban + m.simpanan_qurban %}
+          {% set totals.semua = totals.semua + m.total_simpanan %}
+          <tr class="hover:bg-slate-50 transition {% if m.status == 'Keluar' %}text-slate-400 bg-slate-50/50 italic{% endif %}">
+            <td class="py-2 px-3 text-center border border-slate-200 font-mono">{{ loop.index }}</td>
+            <td class="py-2 px-3 text-center border border-slate-200 font-mono font-bold">{{ m.no_anggota }}</td>
+            <td class="py-2 px-3 border border-slate-200">
+              <span class="font-bold text-slate-800">{{ m.nama }}</span>
+              {% if m.status == 'Keluar' %}
+              <span class="text-[10px] text-red-600 font-normal">(Keluar)</span>
+              {% endif %}
+            </td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ m.simpanan_pokok|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ m.simpanan_wajib|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ m.simpanan_manasuka|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ m.simpanan_lebaran|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ m.simpanan_qurban|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono font-extrabold text-emerald-800 bg-emerald-50/40">
+              {{ m.total_simpanan|rupiah }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-emerald-100/70 text-emerald-950 font-bold border-y-2 border-emerald-400">
+          <tr>
+            <td colspan="3" class="py-3 px-3 text-center uppercase tracking-wider font-extrabold text-xs border border-emerald-300">
+              TOTAL KESELURUHAN
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-emerald-300">{{ totals.pokok|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-emerald-300">{{ totals.wajib|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-emerald-300">{{ totals.lainnya|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-emerald-300">{{ totals.lebaran|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-emerald-300">{{ totals.qurban|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-emerald-950 text-xs border border-emerald-300 bg-emerald-200/60">
+              {{ totals.semua|rupiah }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Tanda Tangan Pengurus Sesuai RAT -->
+    <div class="mt-12 pt-6 grid grid-cols-3 gap-6 text-center text-xs text-slate-700">
+      <div>
+        <p>Ketua KOSITAS,</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">GILANG ABDUL AZIZ, SE, MP.</p>
+      </div>
+      <div>
+        <p>Sekretaris,</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">DAROJATUN</p>
+      </div>
+      <div>
+        <p>Bendahara,</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">ERLINA HARDIYANTI, A.Md.</p>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

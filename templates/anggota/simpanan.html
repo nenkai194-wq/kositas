@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Buku Tabungan Simpanan - {{ member.nama }} - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Buku Tabungan Simpanan Digital</h1>
+      <p class="text-xs text-slate-500 mt-1">Rekam jejak mutasi simpanan Pokok, Wajib, Lebaran, Qurban, dan Manasuka Anda</p>
+    </div>
+
+    <div class="flex items-center gap-2.5 no-print">
+      <a href="{{ url_for('anggota_pengajuan') }}" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-paper-plane"></i> Ajukan Penarikan
+      </a>
+      <button onclick="window.print()" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-print"></i> Cetak Buku Simpanan
+      </button>
+    </div>
+  </div>
+
+  <!-- SALDO BREAKDOWN PER JENIS -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- Pokok -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Simpanan Pokok</span>
+      <div class="text-lg font-extrabold text-purple-700 mt-1 font-mono">{{ member.simpanan_pokok|rupiah }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">1x awal keanggotaan</div>
+    </div>
+
+    <!-- Wajib -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Simpanan Wajib</span>
+      <div class="text-lg font-extrabold text-emerald-700 mt-1 font-mono">{{ member.simpanan_wajib|rupiah }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Rp 100.000 / bulan</div>
+    </div>
+
+    <!-- Lebaran -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Simpanan Lebaran</span>
+      <div class="text-lg font-extrabold text-amber-600 mt-1 font-mono">{{ member.simpanan_lebaran|rupiah }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Jelang Idul Fitri</div>
+    </div>
+
+    <!-- Qurban -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Simpanan Qurban</span>
+      <div class="text-lg font-extrabold text-teal-600 mt-1 font-mono">{{ member.simpanan_qurban|rupiah }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Jelang Idul Adha</div>
+    </div>
+
+    <!-- Manasuka -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Simpanan Manasuka</span>
+      <div class="text-lg font-extrabold text-blue-600 mt-1 font-mono">{{ member.simpanan_manasuka|rupiah }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Bebas setor & tarik</div>
+    </div>
+
+    <!-- Total -->
+    <div class="bg-gradient-to-br from-emerald-800 to-teal-900 text-white rounded-2xl p-4 shadow-md">
+      <span class="text-[10px] font-bold text-emerald-200 uppercase tracking-wider block">Total Simpanan</span>
+      <div class="text-lg font-extrabold text-white mt-1 font-mono">{{ member.total_simpanan|rupiah }}</div>
+      <div class="text-[10px] text-emerald-200 mt-0.5">Hak milik anggota</div>
+    </div>
+  </div>
+
+  <!-- BANNER KOMITMEN TABUNGAN HARI RAYA -->
+  <div class="bg-gradient-to-r from-amber-50 to-teal-50 rounded-2xl border border-amber-200/80 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shadow-sm shrink-0">
+        <i class="fa-solid fa-kaaba"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-xs sm:text-sm font-extrabold text-slate-900">Komitmen Tabungan Khusus Hari Raya</h2>
+          <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Lebaran & Qurban</span>
+        </div>
+        <p class="text-[11px] text-slate-600 mt-0.5">
+          Tabungan dibagikan menjelang Idul Fitri / Idul Adha. Setelah pembagian, buka komitmen baru untuk siklus tahun depan.
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('anggota_komitmen_tabungan') }}" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+        <i class="fa-solid fa-pen-to-square"></i> Kelola / Atur Komitmen Baru &rarr;
+      </a>
+    </div>
+  </div>
+
+  <!-- TABLE MUTASI BUKU TABUNGAN -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    
+    <!-- Filter Jenis Toolbar -->
+    <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+      <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <span class="text-xs font-bold text-slate-400 mr-1">Filter:</span>
+        <a href="{{ url_for('anggota_simpanan', jenis='Semua') }}" 
+           class="px-3 py-1 rounded-xl text-xs font-bold transition {% if current_jenis == 'Semua' %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+          Semua
+        </a>
+        <a href="{{ url_for('anggota_simpanan', jenis='Wajib') }}" 
+           class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Wajib' %}bg-emerald-700 text-white{% else %}text-emerald-700 hover:bg-emerald-50{% endif %}">
+          Wajib
+        </a>
+        <a href="{{ url_for('anggota_simpanan', jenis='Lebaran') }}" 
+           class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Lebaran' %}bg-amber-700 text-white{% else %}text-amber-700 hover:bg-amber-50{% endif %}">
+          Lebaran
+        </a>
+        <a href="{{ url_for('anggota_simpanan', jenis='Qurban') }}" 
+           class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Qurban' %}bg-teal-700 text-white{% else %}text-teal-700 hover:bg-teal-50{% endif %}">
+          Qurban
+        </a>
+        <a href="{{ url_for('anggota_simpanan', jenis='Manasuka') }}" 
+           class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Manasuka' %}bg-blue-700 text-white{% else %}text-blue-700 hover:bg-blue-50{% endif %}">
+          Manasuka
+        </a>
+      </div>
+      <span class="text-xs text-slate-500 font-mono">{{ history|length }} transaksi ditemukan</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">No Transaksi</th>
+            <th class="py-3 px-4">Tanggal</th>
+            <th class="py-3 px-4">Jenis Simpanan</th>
+            <th class="py-3 px-4">Tipe & Metode</th>
+            <th class="py-3 px-4 text-right">Nominal</th>
+            <th class="py-3 px-4">Keterangan</th>
+            <th class="py-3 px-4 text-center">Kuitansi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for t in history %}
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-3 px-4 font-mono font-bold text-slate-700">{{ t.no_transaksi }}</td>
+            <td class="py-3 px-4 text-slate-600">{{ t.tanggal|format_date }}</td>
+            <td class="py-3 px-4 font-bold text-slate-800">
+              <span class="px-2 py-0.5 rounded text-[10px] 
+                {% if t.jenis_simpanan == 'Pokok' %}bg-purple-100 text-purple-800
+                {% elif t.jenis_simpanan == 'Wajib' %}bg-emerald-100 text-emerald-800
+                {% elif t.jenis_simpanan == 'Lebaran' %}bg-amber-100 text-amber-800
+                {% elif t.jenis_simpanan == 'Qurban' %}bg-teal-100 text-teal-800
+                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ t.jenis_simpanan }}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <span class="font-bold {% if t.tipe == 'SETOR' %}text-emerald-700{% else %}text-red-600{% endif %}">
+                {{ t.tipe }}
+              </span>
+              <span class="text-[10px] text-slate-400">({{ t.metode_bayar }})</span>
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold {% if t.tipe == 'SETOR' %}text-emerald-700{% else %}text-red-600{% endif %}">
+              {% if t.tipe == 'SETOR' %}+{% else %}-{% endif %}{{ t.nominal|rupiah }}
+            </td>
+            <td class="py-3 px-4 text-slate-600">{{ t.keterangan or '-' }}</td>
+            <td class="py-3 px-4 text-center">
+              <a href="{{ url_for('cetak_kuitansi_simpanan', id=t.id) }}" target="_blank"
+                 class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold border border-slate-200 transition inline-flex items-center gap-1">
+                <i class="fa-solid fa-print"></i> Kuitansi
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400 text-xs">
+              Belum ada transaksi simpanan untuk filter yang dipilih.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

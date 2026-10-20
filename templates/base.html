@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#15803d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <title>{% block title %}KOSITAS - Koperasi Statistik Tasikmalaya{% endblock %}</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome & Chart.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            kositas: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#052e16',
+            },
+            bps: {
+              navy: '#0f172a',
+              blue: '#0284c7',
+              gold: '#eab308',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background-color: #fff !important; color: #000 !important; }
+    }
+    /* Touch scroll optimization for mobile devices */
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 4px;
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgba(16, 185, 129, 0.3);
+      border-radius: 9999px;
+    }
+    .pb-safe {
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-emerald-600 selection:text-white">
+
+  <!-- TOP BAR / NOTIFICATION BANNER -->
+  <div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-4 no-print border-b border-emerald-800/40">
+    <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
+      <div class="flex items-center space-x-2 truncate">
+        <i class="fa-solid fa-mosque text-emerald-400 shrink-0"></i>
+        <span class="font-medium tracking-wide truncate">
+          KOSITAS Syariah • BPS Kab. Tasikmalaya
+        </span>
+      </div>
+      <div class="flex items-center space-x-2 shrink-0">
+        <!-- Tombol Akses di HP -->
+        <button onclick="document.getElementById('modalMobileAccess').classList.remove('hidden')" 
+                class="bg-blue-600/90 hover:bg-blue-500 text-white px-2.5 py-0.5 rounded-full font-medium transition flex items-center gap-1 shadow-sm text-[11px]">
+          <i class="fa-solid fa-mobile-screen-button text-[10px]"></i>
+          <span class="hidden sm:inline">Akses di HP</span>
+          <span class="sm:hidden">HP</span>
+        </button>
+
+        <!-- Quick User Switcher Button -->
+        <button onclick="document.getElementById('modalSwitchUser').classList.remove('hidden')" 
+                class="bg-emerald-700/90 hover:bg-emerald-600 text-white px-2.5 py-0.5 rounded-full font-medium transition flex items-center gap-1 shadow-sm text-[11px]">
+          <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+          <span class="hidden xs:inline">Ganti Akun Demo</span>
+          <span class="xs:hidden">Demo</span>
+        </button>
+        {% if current_user %}
+        <span class="hidden md:inline text-emerald-300 font-medium">
+          <i class="fa-regular fa-user mr-1"></i>{{ current_user.nama }} ({{ current_user.role|upper }})
+        </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION BAR -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        
+        <!-- Logo & Brand -->
+        <div class="flex items-center space-x-3">
+          <a href="/" class="flex items-center space-x-2.5 sm:space-x-3 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition shrink-0">
+              <i class="fa-solid fa-scale-balanced text-lg"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xl font-extrabold tracking-tight text-slate-900 leading-none">KOSITAS</span>
+                <span class="text-[10px] uppercase font-bold tracking-widest bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">SYARIAH</span>
+              </div>
+              <p class="text-[11px] text-slate-500 font-medium leading-none mt-1">Koperasi BPS Kab. Tasikmalaya</p>
+            </div>
+          </a>
+        </div>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center space-x-1 lg:space-x-2">
+          {% if current_user and current_user.role == 'admin' %}
+            <!-- ADMIN MENU -->
+            <a href="{{ url_for('admin_dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'admin_dashboard' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-gauge-high mr-1.5 text-emerald-600"></i>Dashboard
+            </a>
+            <a href="{{ url_for('admin_anggota_list') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if 'admin_anggota' in request.endpoint %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-users mr-1.5 text-blue-600"></i>Anggota
+            </a>
+            <a href="{{ url_for('admin_simpanan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'admin_simpanan' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-wallet mr-1.5 text-amber-500"></i>Simpanan
+            </a>
+            <a href="{{ url_for('admin_tabungan_khusus') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'admin_tabungan_khusus' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-kaaba mr-1.5 text-amber-500"></i>Tabungan Hari Raya
+            </a>
+            <a href="{{ url_for('admin_pinjaman_list') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if 'admin_pinjaman' in request.endpoint %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-hand-holding-dollar mr-1.5 text-indigo-600"></i>Pinjaman
+            </a>
+            <a href="{{ url_for('admin_rekap_bulanan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'admin_rekap_bulanan' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-calendar-check mr-1.5 text-teal-600"></i>Rekap Bulanan
+            </a>
+
+            <!-- Laporan Dropdown -->
+            <div class="relative group">
+              <button class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-emerald-700 hover:bg-slate-50 inline-flex items-center gap-1 transition">
+                <i class="fa-solid fa-chart-pie mr-1 text-emerald-600"></i>
+                <span>Laporan RAT</span>
+                <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+              </button>
+              <div class="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 hidden group-hover:block transition z-50">
+                <a href="{{ url_for('admin_laporan_simpanan') }}" class="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800">
+                  <i class="fa-solid fa-list-check mr-2 text-emerald-600"></i>Rekap Simpanan (Hal 14-15)
+                </a>
+                <a href="{{ url_for('admin_laporan_piutang') }}" class="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800">
+                  <i class="fa-solid fa-file-invoice-dollar mr-2 text-indigo-600"></i>Data Piutang (Hal 16-17)
+                </a>
+                <a href="{{ url_for('admin_laporan_shu') }}" class="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800">
+                  <i class="fa-solid fa-coins mr-2 text-amber-600"></i>Pembagian SHU (Hal 24-25)
+                </a>
+              </div>
+            </div>
+
+          {% elif current_user %}
+            <!-- MEMBER MENU -->
+            <a href="{{ url_for('anggota_dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_dashboard' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-gauge-high mr-1.5 text-emerald-600"></i>Dashboard Saya
+            </a>
+            <a href="{{ url_for('anggota_simpanan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_simpanan' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-book-open mr-1.5 text-blue-600"></i>Buku Simpanan
+            </a>
+            <a href="{{ url_for('anggota_komitmen_tabungan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_komitmen_tabungan' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-kaaba mr-1.5 text-amber-500"></i>Tabungan Hari Raya
+            </a>
+            <a href="{{ url_for('anggota_pinjaman') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_pinjaman' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-credit-card mr-1.5 text-indigo-600"></i>Pinjaman Saya
+            </a>
+            <a href="{{ url_for('anggota_rekap_bulanan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_rekap_bulanan' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-receipt mr-1.5 text-teal-600"></i>Rekap Potongan Gaji
+            </a>
+            <a href="{{ url_for('anggota_pengajuan') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_pengajuan' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-paper-plane mr-1.5 text-amber-500"></i>Ajukan Pinjaman
+            </a>
+            <a href="{{ url_for('anggota_shu') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'anggota_shu' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-coins mr-1.5 text-amber-600"></i>Estimasi SHU
+            </a>
+          {% endif %}
+        </nav>
+
+        <!-- Right Side: User profile, Logout & Mobile Hamburger -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          {% if current_user %}
+            <div class="text-right hidden sm:block">
+              <div class="text-xs font-bold text-slate-800 leading-tight">{{ current_user.nama }}</div>
+              <div class="text-[11px] text-slate-500">{{ current_user.no_anggota }} • {{ current_user.jabatan }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" title="Keluar" class="hidden sm:flex w-9 h-9 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 items-center justify-center transition border border-slate-200">
+              <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+            </a>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
+              Masuk
+            </a>
+          {% endif %}
+
+          <!-- Mobile Hamburger Toggle Button -->
+          <button type="button" onclick="toggleMobileDrawer()" aria-label="Buka Menu" 
+                  class="md:hidden w-10 h-10 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 flex items-center justify-center transition border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <i class="fa-solid fa-bars text-base"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE SLIDE-OVER DRAWER -->
+  <div id="mobileDrawer" class="hidden fixed inset-0 z-50 overflow-hidden no-print">
+    <!-- Backdrop overlay -->
+    <div onclick="toggleMobileDrawer()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    
+    <div class="fixed inset-y-0 right-0 max-w-xs w-full bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out">
+      
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-slate-100 bg-gradient-to-r from-emerald-800 to-teal-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white">
+            <i class="fa-solid fa-scale-balanced text-sm"></i>
+          </div>
+          <div>
+            <div class="font-extrabold text-sm leading-tight">KOSITAS Mobile</div>
+            <div class="text-[10px] text-emerald-200">Koperasi Syariah BPS Tasik</div>
+          </div>
+        </div>
+        <button onclick="toggleMobileDrawer()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Drawer Content -->
+      <div class="p-4 overflow-y-auto flex-grow space-y-4">
+        {% if current_user %}
+        <!-- User Profile Card -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+          <div class="truncate mr-2">
+            <div class="text-xs font-extrabold text-slate-900 truncate">{{ current_user.nama }}</div>
+            <div class="text-[10px] text-slate-500 font-mono">{{ current_user.no_anggota }} • {{ current_user.role|upper }}</div>
+          </div>
+          <button onclick="document.getElementById('modalSwitchUser').classList.remove('hidden'); toggleMobileDrawer();" 
+                  class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-[10px] font-bold transition shrink-0">
+            Ganti Akun
+          </button>
+        </div>
+
+        <!-- Menu Links -->
+        <div class="space-y-1">
+          <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">Menu Aplikasi</div>
+          
+          {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'admin_dashboard' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-gauge-high w-5 text-emerald-600"></i> Dashboard Admin
+            </a>
+            <a href="{{ url_for('admin_anggota_list') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if 'admin_anggota' in request.endpoint %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-users w-5 text-blue-600"></i> Data 38 Anggota
+            </a>
+            <a href="{{ url_for('admin_simpanan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'admin_simpanan' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-wallet w-5 text-amber-500"></i> Entri Simpanan
+            </a>
+            <a href="{{ url_for('admin_tabungan_khusus') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'admin_tabungan_khusus' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-kaaba w-5 text-amber-600"></i> Tabungan Hari Raya
+            </a>
+            <a href="{{ url_for('admin_pinjaman_list') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if 'admin_pinjaman' in request.endpoint %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-hand-holding-dollar w-5 text-indigo-600"></i> Pinjaman & Pembiayaan
+            </a>
+            <a href="{{ url_for('admin_rekap_bulanan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'admin_rekap_bulanan' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-calendar-check w-5 text-teal-600"></i> Rekap Potong Gaji
+            </a>
+            
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 pt-3 pb-1">Laporan Resmi RAT</div>
+            <a href="{{ url_for('admin_laporan_simpanan') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50">
+              <i class="fa-solid fa-list-check w-5 text-emerald-600"></i> Rekap Simpanan (Hal 14)
+            </a>
+            <a href="{{ url_for('admin_laporan_piutang') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50">
+              <i class="fa-solid fa-file-invoice-dollar w-5 text-indigo-600"></i> Data Piutang (Hal 16)
+            </a>
+            <a href="{{ url_for('admin_laporan_shu') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50">
+              <i class="fa-solid fa-coins w-5 text-amber-600"></i> Pembagian SHU (Hal 24)
+            </a>
+
+          {% else %}
+            <a href="{{ url_for('anggota_dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_dashboard' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-gauge-high w-5 text-emerald-600"></i> Dashboard Saya
+            </a>
+            <a href="{{ url_for('anggota_simpanan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_simpanan' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-book-open w-5 text-blue-600"></i> Buku Simpanan
+            </a>
+            <a href="{{ url_for('anggota_komitmen_tabungan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_komitmen_tabungan' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-kaaba w-5 text-amber-600"></i> Tabungan Hari Raya
+            </a>
+            <a href="{{ url_for('anggota_pinjaman') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_pinjaman' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-credit-card w-5 text-indigo-600"></i> Pinjaman Saya
+            </a>
+            <a href="{{ url_for('anggota_rekap_bulanan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_rekap_bulanan' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-receipt w-5 text-teal-600"></i> Slip Potong Gaji
+            </a>
+            <a href="{{ url_for('anggota_pengajuan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_pengajuan' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-paper-plane w-5 text-amber-500"></i> Ajukan Pinjaman / Penarikan
+            </a>
+            <a href="{{ url_for('anggota_shu') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_shu' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+              <i class="fa-solid fa-coins w-5 text-amber-600"></i> Estimasi Penerimaan SHU
+            </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Drawer Footer -->
+      <div class="p-4 border-t border-slate-200 bg-slate-50">
+        {% if current_user %}
+        <a href="{{ url_for('logout') }}" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border border-red-200">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar (Logout)
+        </a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk Sekarang
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- APP-LIKE MOBILE BOTTOM NAVIGATION BAR -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-2 py-1 flex justify-around items-center no-print pb-safe">
+    {% if current_user and current_user.role == 'admin' %}
+      <a href="{{ url_for('admin_dashboard') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'admin_dashboard' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-gauge-high text-base mb-0.5"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('admin_anggota_list') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if 'admin_anggota' in request.endpoint %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-users text-base mb-0.5"></i>
+        <span>Anggota</span>
+      </a>
+      <a href="{{ url_for('admin_simpanan') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'admin_simpanan' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-wallet text-base mb-0.5"></i>
+        <span>Simpanan</span>
+      </a>
+      <a href="{{ url_for('admin_tabungan_khusus') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'admin_tabungan_khusus' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-kaaba text-base mb-0.5"></i>
+        <span>Hari Raya</span>
+      </a>
+      <button onclick="toggleMobileDrawer()" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold text-slate-500 hover:text-slate-800">
+        <i class="fa-solid fa-bars text-base mb-0.5"></i>
+        <span>Menu</span>
+      </button>
+    {% elif current_user %}
+      <a href="{{ url_for('anggota_dashboard') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'anggota_dashboard' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-gauge-high text-base mb-0.5"></i>
+        <span>Home</span>
+      </a>
+      <a href="{{ url_for('anggota_simpanan') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'anggota_simpanan' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-book-open text-base mb-0.5"></i>
+        <span>Simpanan</span>
+      </a>
+      <a href="{{ url_for('anggota_komitmen_tabungan') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'anggota_komitmen_tabungan' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-kaaba text-base mb-0.5"></i>
+        <span>Hari Raya</span>
+      </a>
+      <a href="{{ url_for('anggota_pinjaman') }}" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold {% if request.endpoint == 'anggota_pinjaman' %}text-emerald-700{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+        <i class="fa-solid fa-credit-card text-base mb-0.5"></i>
+        <span>Pinjaman</span>
+      </a>
+      <button onclick="toggleMobileDrawer()" class="flex flex-col items-center py-1 px-2 rounded-xl transition text-[10px] font-bold text-slate-500 hover:text-slate-800">
+        <i class="fa-solid fa-bars text-base mb-0.5"></i>
+        <span>Menu</span>
+      </button>
+    {% endif %}
+  </nav>
+
+  <!-- FLASH MESSAGES -->
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-3 sm:mt-4 no-print w-full">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% set alert_bg = 'bg-emerald-50 border-emerald-200 text-emerald-800' %}
+          {% set icon = 'fa-circle-check text-emerald-500' %}
+          {% if category == 'danger' %}
+            {% set alert_bg = 'bg-red-50 border-red-200 text-red-800' %}
+            {% set icon = 'fa-circle-exclamation text-red-500' %}
+          {% elif category == 'warning' %}
+            {% set alert_bg = 'bg-amber-50 border-amber-200 text-amber-800' %}
+            {% set icon = 'fa-triangle-exclamation text-amber-500' %}
+          {% elif category == 'info' %}
+            {% set alert_bg = 'bg-blue-50 border-blue-200 text-blue-800' %}
+            {% set icon = 'fa-circle-info text-blue-500' %}
+          {% endif %}
+          <div class="flex items-center justify-between p-3.5 mb-3 rounded-xl border {{ alert_bg }} shadow-sm transition">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid {{ icon }} text-lg"></i>
+              <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-grow max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full pb-24 md:pb-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-slate-500 text-xs no-print mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-xs">
+          K
+        </div>
+        <div>
+          <span class="font-bold text-slate-700">KOSITAS (Koperasi Statistik Tasikmalaya)</span> — BPS Kabupaten Tasikmalaya
+          <p class="text-[11px] text-slate-400">Jl. Raya Timur Singaparna KM. 4 Cintaraja, Kec. Singaparna, Tasikmalaya</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-6 text-slate-500">
+        <span>Pengurus 2026-2028: Gilang Abdul Aziz (Ketua) • Darojatun (Sekretaris) • Erlina Hardiyanti (Bendahara)</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL GANTI AKUN DEMO / QUICK USER SWITCHER -->
+  <div id="modalSwitchUser" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      <div class="bg-gradient-to-r from-emerald-800 to-teal-800 text-white p-5 flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-bold flex items-center gap-2">
+            <i class="fa-solid fa-users-gear text-emerald-300"></i>
+            Ganti Akun Demo KOSITAS
+          </h3>
+          <p class="text-xs text-emerald-100">Beralih peran secara instan untuk menguji fitur Admin & Anggota</p>
+        </div>
+        <button onclick="document.getElementById('modalSwitchUser').classList.add('hidden')" class="text-emerald-200 hover:text-white">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 max-h-[75vh] overflow-y-auto space-y-4">
+        <!-- Pengurus / Admin section -->
+        <div>
+          <h4 class="text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Akun Administrator & Pengurus</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <a href="{{ url_for('switch_user', user_id=999) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+              <div>
+                <span class="font-bold text-xs text-emerald-950 block">Administrator KOSITAS</span>
+                <span class="text-[11px] text-emerald-700">ADM-001 • Pengurus Utama</span>
+              </div>
+              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ADMIN</span>
+            </a>
+            <a href="{{ url_for('switch_user', user_id=7) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+              <div>
+                <span class="font-bold text-xs text-emerald-950 block">Gilang Abdul Aziz, SE, MP</span>
+                <span class="text-[11px] text-emerald-700">KST-007 • Ketua Koperasi</span>
+              </div>
+              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">KETUA</span>
+            </a>
+            <a href="{{ url_for('switch_user', user_id=2) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+              <div>
+                <span class="font-bold text-xs text-emerald-950 block">Darojatun</span>
+                <span class="text-[11px] text-emerald-700">KST-002 • Sekretaris</span>
+              </div>
+              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">SEKRETARIS</span>
+            </a>
+            <a href="{{ url_for('switch_user', user_id=19) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+              <div>
+                <span class="font-bold text-xs text-emerald-950 block">Erlina Hardiyanti, A.Md</span>
+                <span class="text-[11px] text-emerald-700">KST-019 • Bendahara</span>
+              </div>
+              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">BENDAHARA</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Sample Anggota section -->
+        <div>
+          <h4 class="text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Sampel Anggota (BPS Kab. Tasikmalaya)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {% for m in all_active_members[:12] %}
+              {% if m.id not in [999, 7, 2, 19] %}
+              <a href="{{ url_for('switch_user', user_id=m.id) }}" class="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 flex items-center justify-between group transition">
+                <div>
+                  <span class="font-semibold text-xs text-slate-800 block group-hover:text-emerald-800">{{ m.nama }}</span>
+                  <span class="text-[10px] text-slate-500">{{ m.no_anggota }} • Simp: {{ m.total_simpanan|rupiah }}</span>
+                </div>
+                <span class="text-[11px] font-medium text-slate-400 group-hover:text-emerald-600">
+                  <i class="fa-solid fa-arrow-right"></i>
+                </span>
+              </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 text-right">
+        <button onclick="document.getElementById('modalSwitchUser').classList.add('hidden')" class="px-4 py-1.5 text-xs font-semibold bg-slate-200 hover:bg-slate-300 rounded-lg transition text-slate-700">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL AKSES DI HANDPHONE / QR CODE -->
+  <div id="modalMobileAccess" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-5 flex justify-between items-center">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold leading-tight">Akses KOSITAS di Handphone</h3>
+            <p class="text-[11px] text-blue-200">Buka di smartphone untuk kemudahan akses</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('modalMobileAccess').classList.add('hidden')" class="text-blue-200 hover:text-white">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 text-center space-y-4">
+        <!-- QR Code -->
+        <div class="inline-block p-3 bg-white rounded-2xl border-2 border-dashed border-blue-300 shadow-inner">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ server_url }}" 
+               alt="QR Code Akses HP {{ server_url }}" 
+               class="w-44 h-44 mx-auto rounded-xl">
+        </div>
+        
+        <div>
+          <span class="text-xs text-slate-500 block">Scan QR Code dengan kamera HP atau buka tautan:</span>
+          <div class="mt-2 flex items-center justify-center gap-2">
+            <span class="px-3.5 py-1.5 bg-slate-100 rounded-xl font-mono font-extrabold text-sm text-blue-700 select-all border border-slate-200">
+              {{ server_url }}
+            </span>
+            <button onclick="navigator.clipboard.writeText('{{ server_url }}'); alert('Alamat URL berhasil disalin ke clipboard!');" 
+                    title="Salin Alamat" 
+                    class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200 transition text-xs font-bold">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="text-left bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1.5 leading-relaxed">
+          <div class="font-bold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-wifi text-emerald-600"></i> Petunjuk Koneksi Handphone:
+          </div>
+          <p>1. Pastikan Handphone & Laptop terhubung ke <strong>jaringan Wi-Fi / Hotspot yang sama</strong>.</p>
+          <p>2. Buka browser HP (Chrome, Safari, atau Edge) lalu scan QR atau ketik alamat IP di atas.</p>
+          <p>3. Tampilan web telah dioptimalkan secara responsif lengkap dengan <strong>Bottom Navigation Bar</strong> ala aplikasi mobile perbankan.</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 text-right">
+        <button onclick="document.getElementById('modalMobileAccess').classList.add('hidden')" class="px-4 py-1.5 text-xs font-semibold bg-slate-200 hover:bg-slate-300 rounded-lg transition text-slate-700">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleMobileDrawer() {
+      const drawer = document.getElementById('mobileDrawer');
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+        document.body.classList.toggle('overflow-hidden', !drawer.classList.contains('hidden'));
+      }
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail Pinjaman {{ loan.no_pinjaman }} - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <a href="{{ url_for('admin_pinjaman_list') }}" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center transition shadow-sm">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+      </a>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-extrabold text-slate-900 font-mono">{{ loan.no_pinjaman }}</h1>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if loan.status == 'Aktif' %}bg-indigo-100 text-indigo-800{% else %}bg-emerald-100 text-emerald-800{% endif %}">
+            {{ loan.status }}
+          </span>
+          <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
+            {{ loan.jenis_pinjaman }}
+          </span>
+        </div>
+        <p class="text-xs text-slate-500">Peminjam: <span class="font-bold text-slate-800">{{ loan.nama_anggota }}</span> ({{ loan.no_anggota }} • {{ loan.jabatan }})</p>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2">
+      {% if loan.status == 'Aktif' %}
+      <a href="{{ url_for('admin_pinjaman_bayar', id=loan.id) }}" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-coins"></i> Bayar Angsuran
+      </a>
+      <a href="{{ url_for('admin_pinjaman_pelunasan_dipercepat', id=loan.id) }}" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/20 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-check-double"></i> Pelunasan Dipercepat
+      </a>
+      <a href="{{ url_for('admin_pinjaman_topup', id=loan.id) }}" class="px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-700/20 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-arrows-rotate"></i> Top Up Pinjaman
+      </a>
+      {% else %}
+      <a href="{{ url_for('cetak_slip_pelunasan', id=loan.id) }}" target="_blank" class="px-3.5 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-certificate"></i> Surat Keterangan Lunas
+      </a>
+      {% if loan.is_topup or loan.pelunasan_tipe == 'Top Up' %}
+      <a href="{{ url_for('cetak_slip_topup', id=loan.id) }}" target="_blank" class="px-3.5 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-receipt"></i> Bukti Top Up
+      </a>
+      {% endif %}
+      {% endif %}
+      <button onclick="window.print()" class="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-print"></i> Cetak Kartu
+      </button>
+    </div>
+  </div>
+
+  <!-- SUMMARY CARDS & PROGRESS -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-5">
+    
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 text-xs">
+      <div>
+        <span class="text-[10px] text-slate-400 block uppercase font-bold">Plafon Pokok</span>
+        <span class="text-base font-extrabold text-slate-900 font-mono">{{ loan.plafon_pokok|rupiah }}</span>
+      </div>
+      <div>
+        <span class="text-[10px] text-slate-400 block uppercase font-bold">Margin Koperasi</span>
+        <span class="text-base font-bold text-slate-700 font-mono">{{ loan.margin_nominal|rupiah }} ({{ loan.margin_persen }}%)</span>
+      </div>
+      <div>
+        <span class="text-[10px] text-slate-400 block uppercase font-bold">Sisa Pokok Hutang</span>
+        <span class="text-base font-extrabold text-indigo-700 font-mono">{{ loan.saldo_pokok|rupiah }}</span>
+      </div>
+      <div>
+        <span class="text-[10px] text-slate-400 block uppercase font-bold">Angsuran / Bulan</span>
+        <span class="text-base font-bold text-slate-800 font-mono">{{ loan.total_angsuran_bulanan|rupiah }}</span>
+        <span class="text-[10px] text-slate-400 block">Pokok: {{ loan.angsuran_pokok_bulanan|rupiah }}</span>
+      </div>
+      <div>
+        <span class="text-[10px] text-slate-400 block uppercase font-bold">Tenor & Cicilan</span>
+        <span class="text-base font-bold text-slate-800">{{ loan.angsuran_ke }} / {{ loan.tenor_bulan }} bln</span>
+        <span class="text-[10px] text-slate-400 block">Sisa {{ loan.tenor_bulan - loan.angsuran_ke }} bln</span>
+      </div>
+      <div>
+        <span class="text-[10px] text-slate-400 block uppercase font-bold">Persentase Pelunasan</span>
+        <span class="text-base font-extrabold text-emerald-700">{{ loan.persen_lunas }}%</span>
+      </div>
+    </div>
+
+    <!-- Progress Meter -->
+    <div class="space-y-1.5 pt-2 border-t border-slate-100">
+      <div class="flex justify-between text-xs font-semibold text-slate-600">
+        <span>Progress Pelunasan Kontrak</span>
+        <span class="font-mono">{{ loan.persen_lunas }}% Terbayar</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+        <div class="bg-gradient-to-r from-emerald-500 to-indigo-600 h-3 rounded-full transition-all duration-700" style="width: {{ loan.persen_lunas }}%"></div>
+      </div>
+    </div>
+
+    <!-- Extra Info -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+      <div><span class="text-slate-400">Tanggal Pengajuan:</span> <span class="font-medium text-slate-700">{{ loan.tanggal_pengajuan|format_date }}</span></div>
+      <div><span class="text-slate-400">Tanggal Cair:</span> <span class="font-medium text-slate-700">{{ loan.tanggal_cair|format_date }}</span></div>
+      <div><span class="text-slate-400">Keperluan:</span> <span class="font-medium text-slate-700">{{ loan.keperluan or '-' }}</span></div>
+    </div>
+
+  </div>
+
+  <!-- INSTALLMENTS TABLE -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <div>
+        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-600"></i>
+          Riwayat Pembayaran Angsuran
+        </h2>
+        <p class="text-xs text-slate-500">Daftar transaksi cicilan yang telah dibayarkan oleh anggota</p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">No Kuitansi</th>
+            <th class="py-3 px-4">Tanggal Bayar</th>
+            <th class="py-3 px-4 text-center">Ke</th>
+            <th class="py-3 px-4 text-right">Angsuran Pokok</th>
+            <th class="py-3 px-4 text-right">Margin / Jasa</th>
+            <th class="py-3 px-4 text-right">Total Bayar</th>
+            <th class="py-3 px-4 text-right">Sisa Pokok</th>
+            <th class="py-3 px-4">Metode & Ket</th>
+            <th class="py-3 px-4 text-center">Cetak</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for a in installments %}
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-3 px-4 font-mono font-bold text-slate-700">{{ a.no_angsuran }}</td>
+            <td class="py-3 px-4 text-slate-600">{{ a.tanggal_bayar|format_date }}</td>
+            <td class="py-3 px-4 text-center font-bold text-slate-800">
+              <span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 inline-flex items-center justify-center text-[10px]">
+                {{ a.angsuran_ke }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-800">{{ a.angsuran_pokok|rupiah }}</td>
+            <td class="py-3 px-4 text-right font-mono text-slate-800">{{ a.angsuran_margin|rupiah }}</td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">{{ a.total_bayar|rupiah }}</td>
+            <td class="py-3 px-4 text-right font-mono font-extrabold text-indigo-700">{{ a.sisa_pokok_setelah|rupiah }}</td>
+            <td class="py-3 px-4 text-slate-600">
+              {% if a.metode_bayar == 'Potongan TK' %}
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200 inline-block mb-0.5">
+                Potongan TK
+              </span>
+              {% else %}
+              <span class="font-medium text-slate-700 block">{{ a.metode_bayar }}</span>
+              {% endif %}
+              <span class="text-[10px] text-slate-400 block">{{ a.keterangan }}</span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <a href="{{ url_for('cetak_kuitansi_angsuran', id=a.id) }}" target="_blank"
+                 class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold transition">
+                <i class="fa-solid fa-print"></i> Kuitansi
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="py-8 text-center text-slate-400 text-xs">Belum ada transaksi pembayaran angsuran.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

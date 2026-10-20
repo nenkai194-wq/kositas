@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Pengajuan Mandiri - {{ member.nama }} - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Pengajuan Pinjaman & Penarikan Simpanan</h1>
+      <p class="text-xs text-slate-500 mt-1">Layanan mandiri anggota KOSITAS BPS Tasikmalaya untuk mengajukan pembiayaan baru atau pencairan tabungan</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- FORM PENGAJUAN (7 COLS) -->
+    <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7 space-y-5">
+      <div class="border-b border-slate-100 pb-3">
+        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane text-emerald-600"></i>
+          Form Pengajuan Mandiri
+        </h2>
+        <p class="text-xs text-slate-400">Pengajuan akan diverifikasi dan disetujui oleh Pengurus KOSITAS</p>
+      </div>
+
+      <form method="POST" class="space-y-4">
+
+        <!-- Jenis Layanan (Pinjaman / Penarikan) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pengajuan <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="p-3 border border-slate-200 rounded-xl flex items-center space-x-2.5 cursor-pointer hover:bg-slate-50 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-900">
+              <input type="radio" name="jenis" value="PINJAMAN" checked onchange="toggleFormJenis('PINJAMAN')" class="text-emerald-600 focus:ring-emerald-500">
+              <span class="text-xs font-bold">Pengajuan Pinjaman</span>
+            </label>
+            <label class="p-3 border border-slate-200 rounded-xl flex items-center space-x-2.5 cursor-pointer hover:bg-slate-50 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-900">
+              <input type="radio" name="jenis" value="PENARIKAN_SIMPANAN" onchange="toggleFormJenis('PENARIKAN_SIMPANAN')" class="text-emerald-600 focus:ring-emerald-500">
+              <span class="text-xs font-bold">Penarikan Tabungan</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Kategori / Produk -->
+        <div id="boxKategoriPinjaman" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Produk Pembiayaan <span class="text-red-500">*</span></label>
+            <select name="kategori" id="selectKategoriPinjaman" onchange="calcEstimasi()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+              <option value="JAPAN">JAPAN - Jangka Panjang (Maks Rp 30 Juta, Tenor s/d 30 Bln)</option>
+              <option value="JAPEN">JAPEN - Jangka Pendek (Maks Rp 7 Juta, Tenor s/d 10 Bln)</option>
+              <option value="Bon Putih">Bon Putih / Kas (Maks Rp 1 Juta, 2%/Bln)</option>
+              <option value="Barang">Pinjaman Barang (Maks Rp 7.5 Juta, Tenor s/d 10 Bln)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Sumber Pemotongan Angsuran <span class="text-red-500">*</span></label>
+            <select name="sumber_potongan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+              <option value="Potong Gaji (Payroll)" selected>Potongan Gaji (Payroll Bulanan BPS)</option>
+              <option value="Potongan TK (Tunjangan Kinerja)">Potongan TK (Tunjangan Kinerja BPS)</option>
+              <option value="Tunai ke Bendahara">Setoran Tunai ke Kasir / Bendahara KOSITAS</option>
+              <option value="Transfer Bank BSI">Transfer Bank BSI</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="boxKategoriSimpanan" class="hidden space-y-3">
+          <!-- Info Kebijakan Penarikan Simpanan -->
+          <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-1">
+            <div class="font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-info text-blue-600"></i> Ketentuan Penarikan Tabungan:
+            </div>
+            <p class="text-[11px] text-blue-800 leading-relaxed">
+              • <strong>Simpanan Lebaran, Qurban, dan Manasuka</strong> dapat ditarik sesuai saldo Anda.<br>
+              • <strong>Simpanan Pokok & Wajib TERKUNCI</strong> dan hanya dapat ditarik jika berhenti menjadi anggota koperasi karena <strong>Pensiun</strong>, <strong>Meninggal Dunia</strong>, atau <strong>Pindah Kantor / Mutasi</strong>.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Tabungan Yang Ditarik <span class="text-red-500">*</span></label>
+            <select name="kategori_simp" id="selectKategoriSimpanan" onchange="onSimpananSelectChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+              <option value="Lebaran" data-saldo="{{ member.simpanan_lebaran }}">Simpanan Hari Raya Lebaran (Saldo: {{ member.simpanan_lebaran|rupiah }})</option>
+              <option value="Qurban" data-saldo="{{ member.simpanan_qurban }}">Simpanan Qurban (Saldo: {{ member.simpanan_qurban|rupiah }})</option>
+              <option value="Manasuka" data-saldo="{{ member.simpanan_manasuka }}">Simpanan Manasuka / Sukarela (Saldo: {{ member.simpanan_manasuka|rupiah }})</option>
+              <option value="Pokok_Wajib" data-saldo="{{ member.simpanan_pokok + member.simpanan_wajib }}">Pencairan Simpanan Pokok & Wajib (Khusus Berhenti: Pensiun / Meninggal / Pindah Kantor) - Total: {{ (member.simpanan_pokok + member.simpanan_wajib)|rupiah }}</option>
+            </select>
+          </div>
+
+          <!-- Alasan Khusus Pengunduran / Berhenti (Muncul jika pilih Pokok_Wajib) -->
+          <div id="boxAlasanKhususAnggota" class="hidden p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-xs space-y-2">
+            <span class="font-bold text-amber-900 block flex items-center gap-1.5">
+              <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Alasan Khusus Berhenti Keanggotaan:
+            </span>
+            <select name="alasan_khusus" id="selectAlasanKhususAnggota" class="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-950 focus:ring-2 focus:ring-amber-500">
+              <option value="">-- Pilih Alasan Sah Berhenti --</option>
+              <option value="Pensiun">Pensiun (Purna Tugas BPS)</option>
+              <option value="Meninggal Dunia">Meninggal Dunia (Pencairan ke Ahli Waris)</option>
+              <option value="Pindah Kantor">Pindah Kantor / Mutasi Wilayah Tugas</option>
+            </select>
+            <p class="text-[11px] text-amber-800 italic">
+              *Pengajuan ini akan memproses pencairan seluruh simpanan dan penutupan akun keanggotaan KOSITAS setelah diverifikasi oleh pengurus.
+            </p>
+          </div>
+        </div>
+
+        <!-- Nominal & Tenor -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nominal (Rp) <span class="text-red-500">*</span></label>
+            <input type="number" name="nominal" id="inputNominal" value="5000000" min="50000" step="50000" required oninput="calcEstimasi()"
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          </div>
+
+          <div id="boxTenor">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tenor (Bulan) <span class="text-red-500">*</span></label>
+            <input type="number" name="tenor_bulan" id="inputTenor" value="10" min="1" max="30" required oninput="calcEstimasi()"
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          </div>
+        </div>
+
+        <!-- Alasan / Keperluan -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Alasan / Keperluan Pengajuan <span class="text-red-500">*</span></label>
+          <textarea name="alasan" required rows="2" placeholder="Jelaskan kebutuhan pengajuan (contoh: biaya pendidikan anak, servis mobil, kebutuhan idul fitri, dll.)"
+                    class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/25 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Mandiri
+        </button>
+
+      </form>
+    </div>
+
+    <!-- ESTIMASI SIMULASI CICILAN (5 COLS) -->
+    <div class="lg:col-span-5 space-y-4">
+      <div id="simulasiCard" class="bg-gradient-to-br from-slate-900 to-emerald-950 text-white rounded-2xl p-6 shadow-xl space-y-4 border border-emerald-900/50">
+        
+        <div class="border-b border-emerald-800/60 pb-3 flex items-center justify-between">
+          <h3 class="text-sm font-bold flex items-center gap-2 text-emerald-200">
+            <i class="fa-solid fa-calculator text-emerald-400"></i>
+            Estimasi Cicilan Pinjaman
+          </h3>
+          <span class="text-[10px] uppercase font-bold tracking-widest bg-emerald-800/80 px-2 py-0.5 rounded text-emerald-300">
+            Otomatis
+          </span>
+        </div>
+
+        <div class="p-4 bg-emerald-900/40 rounded-xl border border-emerald-700/40">
+          <span class="text-xs text-emerald-200 block">Estimasi Potong Gaji Per Bulan</span>
+          <div id="estTotalCicilan" class="text-2xl font-extrabold text-white font-mono mt-1">Rp 0</div>
+          <div class="text-[11px] text-emerald-300 mt-1 flex justify-between">
+            <span>Pokok: <span id="estPokok" class="font-bold">Rp 0</span></span>
+            <span>Margin: <span id="estMargin" class="font-bold">Rp 0</span></span>
+          </div>
+        </div>
+
+        <div class="space-y-2 text-xs divide-y divide-emerald-800/40">
+          <div class="flex justify-between pt-2">
+            <span class="text-slate-300">Biaya Provisi (1%):</span>
+            <span id="estProvisi" class="font-bold font-mono text-amber-300">Rp 0</span>
+          </div>
+          <div class="flex justify-between pt-2">
+            <span class="text-slate-300">DRK (0.5% khusus JAPAN):</span>
+            <span id="estDRK" class="font-bold font-mono text-amber-300">Rp 0</span>
+          </div>
+          <div class="flex justify-between pt-2 font-bold text-white">
+            <span>Perkiraan Bersih Diterima:</span>
+            <span id="estBersih" class="font-mono text-emerald-300 text-sm">Rp 0</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-emerald-950/60 rounded-xl border border-emerald-800/40 text-[11px] text-emerald-300 leading-relaxed">
+          <i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i>
+          Pengajuan akan diproses oleh Bendahara Erlina Hardiyanti & disetujui Ketua Gilang Abdul Aziz.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIWAYAT PENGAJUAN ONLINE ANGGOTA -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden p-6 space-y-4">
+    <div class="border-b border-slate-100 pb-3">
+      <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-clock-rotate-left text-slate-600"></i>
+        Riwayat Pengajuan Mandiri Anda
+      </h2>
+      <p class="text-xs text-slate-500">Status verifikasi pengajuan pinjaman dan penarikan simpanan</p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">No Pengajuan</th>
+            <th class="py-3 px-4">Tanggal</th>
+            <th class="py-3 px-4">Jenis & Kategori</th>
+            <th class="py-3 px-4 text-right">Nominal</th>
+            <th class="py-3 px-4">Tenor</th>
+            <th class="py-3 px-4">Alasan</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4">Catatan Admin</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in requests %}
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-4 font-mono font-bold text-slate-700">{{ r.no_pengajuan }}</td>
+            <td class="py-2.5 px-4 text-slate-600">{{ r.tanggal_pengajuan|format_date }}</td>
+            <td class="py-2.5 px-4 font-bold text-slate-800">{{ r.jenis }}: {{ r.kategori }}</td>
+            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900">{{ r.nominal|rupiah }}</td>
+            <td class="py-2.5 px-4 text-slate-600">{% if r.tenor_bulan > 1 %}{{ r.tenor_bulan }} Bulan{% else %}-{% endif %}</td>
+            <td class="py-2.5 px-4 text-slate-600 max-w-xs truncate">{{ r.alasan }}</td>
+            <td class="py-2.5 px-4 text-center">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
+                {% if r.status == 'Menunggu' %}bg-amber-100 text-amber-800
+                {% elif r.status == 'Disetujui' %}bg-emerald-100 text-emerald-800
+                {% else %}bg-red-100 text-red-700{% endif %}">
+                {{ r.status }}
+              </span>
+            </td>
+            <td class="py-2.5 px-4 text-slate-500">{{ r.catatan_admin or '-' }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="py-6 text-center text-slate-400 text-xs">
+              Belum ada riwayat pengajuan online.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function formatRupiah(num) {
+    return 'Rp ' + Number(Math.round(num)).toLocaleString('id-ID');
+  }
+
+  function onSimpananSelectChange() {
+    const sel = document.getElementById('selectKategoriSimpanan');
+    const kat = sel.value;
+    const opt = sel.options[sel.selectedIndex];
+    const saldo = parseFloat(opt.getAttribute('data-saldo') || 0);
+    const boxAlasan = document.getElementById('boxAlasanKhususAnggota');
+    const selAlasan = document.getElementById('selectAlasanKhususAnggota');
+    const inputNom = document.getElementById('inputNominal');
+
+    if (kat === 'Pokok_Wajib') {
+      boxAlasan.classList.remove('hidden');
+      selAlasan.setAttribute('required', 'required');
+      inputNom.value = saldo;
+    } else {
+      boxAlasan.classList.add('hidden');
+      selAlasan.removeAttribute('required');
+      if (saldo > 0) {
+        inputNom.value = saldo;
+      }
+    }
+  }
+
+  function toggleFormJenis(jenis) {
+    const boxPinj = document.getElementById('boxKategoriPinjaman');
+    const boxSimp = document.getElementById('boxKategoriSimpanan');
+    const boxTenor = document.getElementById('boxTenor');
+    const simCard = document.getElementById('simulasiCard');
+
+    if (jenis === 'PINJAMAN') {
+      boxPinj.classList.remove('hidden');
+      boxSimp.classList.add('hidden');
+      boxTenor.classList.remove('hidden');
+      simCard.classList.remove('hidden');
+      calcEstimasi();
+    } else {
+      boxPinj.classList.add('hidden');
+      boxSimp.classList.remove('hidden');
+      boxTenor.classList.add('hidden');
+      simCard.classList.add('hidden');
+      onSimpananSelectChange();
+    }
+  }
+
+  function calcEstimasi() {
+    const kat = document.getElementById('selectKategoriPinjaman').value;
+    const nominal = parseFloat(document.getElementById('inputNominal').value || 0);
+    const tenor = parseInt(document.getElementById('inputTenor').value || 1);
+
+    let marginP = 25.0;
+    if (kat === 'JAPEN') marginP = 10.0;
+    else if (kat === 'Bon Putih') marginP = 2.0 * tenor;
+    else if (kat === 'Barang') marginP = 20.0;
+
+    const marginNom = (nominal * marginP) / 100.0;
+    const totalPj = nominal + marginNom;
+    const angsPokok = tenor > 0 ? (nominal / tenor) : 0;
+    const angsMargin = tenor > 0 ? (marginNom / tenor) : 0;
+    const totalAngs = angsPokok + angsMargin;
+
+    const provisi = (kat === 'Bon Putih' || kat === 'Barang') ? 0 : (nominal * 0.01);
+    const drk = kat === 'JAPAN' ? (nominal * 0.005) : 0;
+    const bersih = nominal - provisi - drk;
+
+    document.getElementById('estTotalCicilan').textContent = formatRupiah(totalAngs);
+    document.getElementById('estPokok').textContent = formatRupiah(angsPokok);
+    document.getElementById('estMargin').textContent = formatRupiah(angsMargin);
+    document.getElementById('estProvisi').textContent = formatRupiah(provisi);
+    document.getElementById('estDRK').textContent = formatRupiah(drk);
+    document.getElementById('estBersih').textContent = formatRupiah(bersih);
+  }
+
+  calcEstimasi();
+</script>
+{% endblock %}

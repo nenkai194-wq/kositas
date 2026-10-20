@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Bukti Pembagian Tabungan Hari Raya - {{ komitmen.nama_anggota }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background-color: #fff !important; }
+      .slip-container { border: 2px solid #065f46 !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 p-4 sm:p-8 min-h-screen text-slate-800">
+
+  <div class="max-w-2xl mx-auto mb-4 flex justify-between items-center no-print">
+    <button onclick="window.history.back()" class="px-4 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-sm hover:bg-slate-50 transition">
+      &larr; Kembali
+    </button>
+    <button onclick="window.print()" class="px-5 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center gap-1.5">
+      Cetak Bukti Pembagian Tabungan
+    </button>
+  </div>
+
+  <div class="slip-container max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border-2 border-emerald-800 p-8 sm:p-10 space-y-6">
+    
+    <!-- Kop Surat KOSITAS -->
+    <div class="text-center pb-4 border-b-2 border-slate-800">
+      <div class="flex items-center justify-center space-x-3 mb-1">
+        <div class="w-12 h-12 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-extrabold text-xl">
+          K
+        </div>
+        <div class="text-left">
+          <h1 class="text-base font-extrabold text-slate-900 tracking-wider">KOPERASI STATISTIK TASIKMALAYA (KOSITAS)</h1>
+          <p class="text-xs text-slate-600 font-semibold">BPS KABUPATEN TASIKMALAYA</p>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-500">Jl. Raya Timur Singaparna KM. 4 Cintaraja, Kec. Singaparna, Tasikmalaya - Jawa Barat</p>
+      
+      <div class="mt-4">
+        <h2 class="text-sm font-extrabold text-emerald-950 uppercase tracking-widest underline">
+          BUKTI PENCAIRAN / PEMBAGIAN TABUNGAN HARI RAYA
+        </h2>
+        <p class="text-[11px] text-slate-500 font-mono mt-0.5">
+          Nomor: SLIP-BAGI/KST/{{ komitmen.tanggal_dibagikan|replace('-', '') if komitmen.tanggal_dibagikan else '2026' }}/{{ komitmen.id }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Data Penerima Tabungan -->
+    <div class="text-xs text-slate-700 space-y-4 leading-relaxed">
+      <p>Telah diserahkan dan dicairkan dana tabungan terencana hari raya kepada anggota KOSITAS berikut:</p>
+      
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-3 gap-2">
+        <span class="text-slate-500">Nama Anggota:</span>
+        <span class="col-span-2 font-bold text-slate-900">{{ komitmen.nama_anggota }}</span>
+
+        <span class="text-slate-500">No. Anggota / NIP:</span>
+        <span class="col-span-2 font-mono font-bold text-slate-800">{{ komitmen.no_anggota }} / {{ komitmen.nip or '-' }}</span>
+
+        <span class="text-slate-500">Jabatan di BPS:</span>
+        <span class="col-span-2 text-slate-700">{{ komitmen.jabatan }}</span>
+      </div>
+
+      <table class="w-full text-xs text-left border border-slate-200 rounded-lg">
+        <tr class="border-b border-slate-100">
+          <td class="py-2.5 px-3 text-slate-500 w-1/3">Jenis Tabungan</td>
+          <td class="py-2.5 px-3 font-bold text-amber-800">
+            {% if komitmen.jenis_tabungan == 'Lebaran' %}
+              🌙 Tabungan Lebaran (Menjelang Hari Raya Idul Fitri)
+            {% else %}
+              🕋 Tabungan Qurban (Menjelang Hari Raya Idul Adha)
+            {% endif %}
+          </td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2.5 px-3 text-slate-500">Tahun Periode Tabungan</td>
+          <td class="py-2.5 px-3 font-mono font-bold">{{ komitmen.tahun_periode }}</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2.5 px-3 text-slate-500">Tanggal Pencairan / Penyerahan</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-900">{{ komitmen.tanggal_dibagikan|format_date }}</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2.5 px-3 text-slate-500">Metode Penyerahan Dana</td>
+          <td class="py-2.5 px-3 font-semibold">{{ komitmen.metode_setor }} / Transfer Bank</td>
+        </tr>
+        <tr class="bg-emerald-50">
+          <td class="py-3 px-3 text-emerald-950 font-bold">TOTAL TABUNGAN DITERIMA</td>
+          <td class="py-3 px-3 font-mono font-extrabold text-base text-emerald-800">
+            {{ komitmen.total_dibagikan|rupiah }}
+          </td>
+        </tr>
+      </table>
+
+      <!-- Catatan Siklus Baru -->
+      <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-[11px] leading-relaxed">
+        <strong>Pemberitahuan Siklus Baru:</strong>
+        Dengan dilakukannya pembagian dana ini, saldo tabungan {{ komitmen.jenis_tabungan }} periode {{ komitmen.tahun_periode }} telah dicairkan seluruhnya. Untuk memulai kembali tabungan {{ komitmen.jenis_tabungan }} periode berikutnya, anggota atau pengurus dapat mengisi <strong>Formulir Pendaftaran Komitmen Tabungan Baru</strong> melalui portal akun KOSITAS.
+      </div>
+    </div>
+
+    <!-- Tanda Tangan -->
+    <div class="pt-6 grid grid-cols-2 gap-8 text-center text-xs">
+      <div>
+        <p class="text-slate-500">Yang Menerima,</p>
+        <p class="text-slate-500 text-[11px]">Anggota KOSITAS</p>
+        <div class="h-16"></div>
+        <p class="font-bold text-slate-900 underline">{{ komitmen.nama_anggota }}</p>
+        <p class="text-[10px] text-slate-400 font-mono">NIP: {{ komitmen.nip or '-' }}</p>
+      </div>
+
+      <div>
+        <p class="text-slate-500">Singaparna, {{ komitmen.tanggal_dibagikan|format_date }}</p>
+        <p class="text-slate-500 text-[11px]">Bendahara KOSITAS</p>
+        <div class="h-16"></div>
+        <p class="font-bold text-slate-900 underline">Erlina Hardiyanti</p>
+        <p class="text-[10px] text-slate-400">Bendahara Pengurus</p>
+      </div>
+    </div>
+
+    <!-- Footer Catatan -->
+    <div class="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+      Dokumen ini sah dan diterbitkan secara digital oleh Sistem Informasi Koperasi Statistik Tasikmalaya (KOSITAS).
+    </div>
+
+  </div>
+
+</body>
+</html>

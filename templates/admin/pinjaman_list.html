@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Manajemen Pinjaman & Pembiayaan - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-extrabold text-slate-900">Manajemen Pinjaman & Pembiayaan</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
+          {{ loans|length }} Kontrak
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Pembiayaan syariah: JAPAN (Jangka Panjang), JAPEN (Jangka Pendek), Bon Putih, dan Pinjaman Barang</p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <a href="{{ url_for('admin_pinjaman_tambah') }}" class="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-700/20 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-plus-circle"></i> Buka Pinjaman Baru
+      </a>
+      <a href="{{ url_for('admin_laporan_piutang') }}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-table-list"></i> Data Piutang RAT
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters Toolbar -->
+  <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+    
+    <!-- Filter Status -->
+    <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
+      <span class="text-xs font-bold text-slate-400 mr-1">Status:</span>
+      <a href="{{ url_for('admin_pinjaman_list', status='Semua', jenis=current_jenis) }}" 
+         class="px-3 py-1 rounded-xl text-xs font-bold transition {% if current_status == 'Semua' %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+        Semua
+      </a>
+      <a href="{{ url_for('admin_pinjaman_list', status='Aktif', jenis=current_jenis) }}" 
+         class="px-3 py-1 rounded-xl text-xs font-bold transition {% if current_status == 'Aktif' %}bg-indigo-700 text-white{% else %}bg-indigo-50 text-indigo-700 hover:bg-indigo-100{% endif %}">
+        Aktif Berjalan
+      </a>
+      <a href="{{ url_for('admin_pinjaman_list', status='Lunas', jenis=current_jenis) }}" 
+         class="px-3 py-1 rounded-xl text-xs font-bold transition {% if current_status == 'Lunas' %}bg-emerald-700 text-white{% else %}bg-emerald-50 text-emerald-700 hover:bg-emerald-100{% endif %}">
+        Lunas
+      </a>
+    </div>
+
+    <!-- Filter Jenis -->
+    <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
+      <span class="text-xs font-bold text-slate-400 mr-1">Jenis:</span>
+      <a href="{{ url_for('admin_pinjaman_list', status=current_status, jenis='Semua') }}" 
+         class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Semua' %}bg-slate-800 text-white{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+        Semua
+      </a>
+      <a href="{{ url_for('admin_pinjaman_list', status=current_status, jenis='JAPAN') }}" 
+         class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'JAPAN' %}bg-purple-700 text-white{% else %}text-purple-700 hover:bg-purple-50{% endif %}">
+        JAPAN
+      </a>
+      <a href="{{ url_for('admin_pinjaman_list', status=current_status, jenis='JAPEN') }}" 
+         class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'JAPEN' %}bg-blue-700 text-white{% else %}text-blue-700 hover:bg-blue-50{% endif %}">
+        JAPEN
+      </a>
+      <a href="{{ url_for('admin_pinjaman_list', status=current_status, jenis='Bon Putih') }}" 
+         class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Bon Putih' %}bg-amber-700 text-white{% else %}text-amber-700 hover:bg-amber-50{% endif %}">
+        Bon Putih
+      </a>
+      <a href="{{ url_for('admin_pinjaman_list', status=current_status, jenis='Barang') }}" 
+         class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {% if current_jenis == 'Barang' %}bg-teal-700 text-white{% else %}text-teal-700 hover:bg-teal-50{% endif %}">
+        Barang
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Loans Table -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">No Pinjaman</th>
+            <th class="py-3 px-4">Peminjam</th>
+            <th class="py-3 px-4">Jenis & Plafon</th>
+            <th class="py-3 px-4">Tenor & Cicilan</th>
+            <th class="py-3 px-4 text-right">Sisa Pokok</th>
+            <th class="py-3 px-4 text-center w-28">Progres</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-center w-32">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for pj in loans %}
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-3 px-4 font-mono font-bold text-slate-700">
+              <a href="{{ url_for('admin_pinjaman_detail', id=pj.id) }}" class="hover:text-indigo-600 block">
+                {{ pj.no_pinjaman }}
+              </a>
+              <span class="text-[10px] text-slate-400 font-sans">Cair: {{ pj.tanggal_cair|format_date }}</span>
+            </td>
+            
+            <td class="py-3 px-4">
+              <span class="font-bold text-slate-900 block">{{ pj.nama_anggota }}</span>
+              <span class="text-[10px] text-slate-400">{{ pj.no_anggota }} • {{ pj.jabatan }}</span>
+            </td>
+
+            <td class="py-3 px-4">
+              <div class="flex items-center space-x-1.5">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold 
+                  {% if pj.jenis_pinjaman == 'JAPAN' %}bg-purple-100 text-purple-800
+                  {% elif pj.jenis_pinjaman == 'JAPEN' %}bg-blue-100 text-blue-800
+                  {% elif pj.jenis_pinjaman == 'Bon Putih' %}bg-amber-100 text-amber-800
+                  {% else %}bg-teal-100 text-teal-800{% endif %}">
+                  {{ pj.jenis_pinjaman }}
+                </span>
+                <span class="font-mono font-bold text-slate-800">{{ pj.plafon_pokok|rupiah }}</span>
+              </div>
+              <span class="text-[10px] text-slate-500">Margin: {{ pj.margin_nominal|rupiah }} ({{ pj.margin_persen }}%)</span>
+            </td>
+
+            <td class="py-3 px-4">
+              <div class="font-bold text-slate-800 font-mono">{{ pj.total_angsuran_bulanan|rupiah }}/bln</div>
+              <span class="text-[10px] text-slate-500">Tenor: {{ pj.tenor_bulan }} bln (Cicilan ke-{{ pj.angsuran_ke }})</span>
+            </td>
+
+            <td class="py-3 px-4 text-right font-extrabold text-indigo-700 font-mono">
+              {{ pj.saldo_pokok|rupiah }}
+            </td>
+
+            <td class="py-3 px-4">
+              <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                <span>{{ pj.persen_lunas }}%</span>
+                <span>{{ pj.angsuran_ke }}/{{ pj.tenor_bulan }}</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: {{ pj.persen_lunas }}%"></div>
+              </div>
+            </td>
+
+            <td class="py-3 px-4 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if pj.status == 'Aktif' %}bg-indigo-100 text-indigo-800{% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                {{ pj.status }}
+              </span>
+            </td>
+
+            <td class="py-3 px-4 text-center">
+              <div class="inline-flex items-center gap-1.5">
+                {% if pj.status == 'Aktif' %}
+                <a href="{{ url_for('admin_pinjaman_bayar', id=pj.id) }}" title="Bayar Angsuran"
+                   class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition">
+                  <i class="fa-solid fa-coins mr-0.5"></i> Bayar
+                </a>
+                {% endif %}
+                <a href="{{ url_for('admin_pinjaman_detail', id=pj.id) }}" title="Kartu Pinjaman"
+                   class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition">
+                  <i class="fa-solid fa-eye text-[11px]"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="py-8 text-center text-slate-400 text-xs">Tidak ada data pinjaman ditemukan.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

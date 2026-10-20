@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Bayar Angsuran Pinjaman {{ loan.no_pinjaman }} - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4">
+
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Bayar Angsuran Pinjaman</h1>
+      <p class="text-xs text-slate-500 mt-1">Pencatatan pembayaran angsuran kredit {{ loan.jenis_pinjaman }} KOSITAS</p>
+    </div>
+    <a href="{{ url_for('admin_pinjaman_detail', id=loan.id) }}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+      <i class="fa-solid fa-arrow-left"></i> Kembali
+    </a>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+    
+    <!-- Info Ringkas Pinjaman -->
+    <div class="p-4 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-3">
+      <div class="flex justify-between items-start">
+        <div>
+          <span class="text-xs font-bold text-indigo-950 block">{{ loan.nama_anggota }} ({{ loan.no_anggota }})</span>
+          <span class="text-[11px] text-indigo-700 font-mono">{{ loan.no_pinjaman }} • {{ loan.jenis_pinjaman }}</span>
+        </div>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
+          Cicilan ke-{{ loan.angsuran_ke + 1 }} dari {{ loan.tenor_bulan }}
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs border-t border-indigo-200/60 pt-2.5">
+        <div>
+          <span class="text-[10px] text-indigo-800/70 block">Plafon Pokok:</span>
+          <span class="font-bold text-indigo-950 font-mono">{{ loan.plafon_pokok|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-indigo-800/70 block">Sisa Pokok Saat Ini:</span>
+          <span class="font-extrabold text-indigo-900 font-mono">{{ loan.saldo_pokok|rupiah }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-indigo-800/70 block">Tagihan Standard:</span>
+          <span class="font-bold text-indigo-950 font-mono">{{ loan.total_angsuran_bulanan|rupiah }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Input Bayar -->
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="pinjaman_id" value="{{ loan.id }}">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Pembayaran <span class="text-red-500">*</span></label>
+          <input type="date" name="tanggal_bayar" value="{{ current_month }}-01" required
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Bulan Buku Rekap</label>
+          <input type="month" name="bulan_buku" value="{{ current_month }}" required
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Angsuran Pokok (Rp) <span class="text-red-500">*</span></label>
+          <input type="number" name="angsuran_pokok" id="inputAngsPokok" value="{{ loan.angsuran_pokok_bulanan }}" min="0" step="100" required oninput="calcTotal()"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Angsuran Margin / Jasa (Rp) <span class="text-red-500">*</span></label>
+          <input type="number" name="angsuran_margin" id="inputAngsMargin" value="{{ loan.angsuran_margin_bulanan }}" min="0" step="100" required oninput="calcTotal()"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <!-- Total Bayar Live Box -->
+      <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+        <div>
+          <span class="text-xs text-emerald-800 font-medium">Total Yang Dibayarkan:</span>
+          <div id="txtTotalBayar" class="text-xl font-extrabold text-emerald-900 font-mono">Rp 0</div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-emerald-800 font-medium">Sisa Pokok Setelah Ini:</span>
+          <div id="txtSisaPokok" class="text-sm font-bold text-slate-700 font-mono">Rp 0</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Metode Pembayaran</label>
+          <select name="metode_bayar" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <option value="Potong Gaji">Potong Gaji (Payroll)</option>
+            <option value="Potongan TK">Potongan TK (Tunjangan Kinerja)</option>
+            <option value="Tunai">Tunai ke Bendahara</option>
+            <option value="Transfer">Transfer Bank BSI</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
+          <input type="text" name="keterangan" value="Pembayaran angsuran ke-{{ loan.angsuran_ke + 1 }}"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <a href="{{ url_for('admin_pinjaman_detail', id=loan.id) }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </a>
+        <button type="submit" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check"></i> Konfirmasi Pembayaran
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+<script>
+  function formatRupiah(num) {
+    return 'Rp ' + Number(Math.round(num)).toLocaleString('id-ID');
+  }
+
+  const saldoAwal = {{ loan.saldo_pokok }};
+
+  function calcTotal() {
+    const pokok = parseFloat(document.getElementById('inputAngsPokok').value || 0);
+    const margin = parseFloat(document.getElementById('inputAngsMargin').value || 0);
+    const total = pokok + margin;
+    const sisa = Math.max(0, saldoAwal - pokok);
+
+    document.getElementById('txtTotalBayar').textContent = formatRupiah(total);
+    document.getElementById('txtSisaPokok').textContent = formatRupiah(sisa);
+  }
+
+  calcTotal();
+</script>
+{% endblock %}

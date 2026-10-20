@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-4">
+  
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">{{ title }}</h1>
+      <p class="text-xs text-slate-500 mt-1">Lengkapi data profil keanggotaan KOSITAS BPS Kabupaten Tasikmalaya</p>
+    </div>
+    <a href="{{ url_for('admin_anggota_list') }}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+      <i class="fa-solid fa-arrow-left"></i> Kembali
+    </a>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+    <form method="POST" class="space-y-5">
+      
+      <!-- Baris 1: No Anggota & NIP -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">No Anggota</label>
+          <input type="text" name="no_anggota" value="{{ member.no_anggota if member else '' }}" placeholder="Otomatis jika dikosongkan (cth: KST-054)"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          <p class="text-[10px] text-slate-400 mt-1">Kosongkan untuk penomoran otomatis KOSITAS.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">NIP (Nomor Induk Pegawai BPS)</label>
+          <input type="text" name="nip" value="{{ member.nip if member else '' }}" placeholder="Contoh: 198501012010011001"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <!-- Baris 2: Nama Lengkap & Jabatan -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Nama Lengkap & Gelar <span class="text-red-500">*</span></label>
+          <input type="text" name="nama" required value="{{ member.nama if member else '' }}" placeholder="Nama beserta gelar akademik"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Jabatan / Posisi</label>
+          <select name="jabatan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <option value="Anggota" {% if member and member.jabatan == 'Anggota' %}selected{% endif %}>Anggota Koperasi</option>
+            <option value="Ketua Koperasi" {% if member and member.jabatan == 'Ketua Koperasi' %}selected{% endif %}>Ketua Koperasi</option>
+            <option value="Sekretaris" {% if member and member.jabatan == 'Sekretaris' %}selected{% endif %}>Sekretaris</option>
+            <option value="Bendahara" {% if member and member.jabatan == 'Bendahara' %}selected{% endif %}>Bendahara</option>
+            <option value="Ketua Badan Pemeriksa" {% if member and member.jabatan == 'Ketua Badan Pemeriksa' %}selected{% endif %}>Ketua Badan Pemeriksa</option>
+            <option value="Badan Pemeriksa" {% if member and member.jabatan == 'Badan Pemeriksa' %}selected{% endif %}>Badan Pemeriksa</option>
+            <option value="Kepala BPS (Pelindung)" {% if member and member.jabatan == 'Kepala BPS (Pelindung)' %}selected{% endif %}>Kepala BPS (Pelindung)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Baris 3: Jenis Kelamin, No HP & Email -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Kelamin</label>
+          <select name="jenis_kelamin" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <option value="Pria" {% if member and member.jenis_kelamin == 'Pria' %}selected{% endif %}>Pria</option>
+            <option value="Wanita" {% if member and member.jenis_kelamin == 'Wanita' %}selected{% endif %}>Wanita</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp / HP</label>
+          <input type="text" name="no_hp" value="{{ member.no_hp if member else '' }}" placeholder="08xxxxxxxxxx"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Email BPS</label>
+          <input type="email" name="email" value="{{ member.email if member else '' }}" placeholder="nama@bps.go.id"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <!-- Baris 4: Tanggal Masuk, Status, Role -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Tanggal Masuk</label>
+          <input type="date" name="tanggal_masuk" value="{{ member.tanggal_masuk if member else '' }}"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Status Keanggotaan</label>
+          <select name="status" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <option value="Aktif" {% if not member or member.status == 'Aktif' %}selected{% endif %}>Aktif</option>
+            <option value="Keluar" {% if member and member.status == 'Keluar' %}selected{% endif %}>Keluar / Non-aktif</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Hak Akses Sistem</label>
+          <select name="role" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <option value="anggota" {% if not member or member.role == 'anggota' %}selected{% endif %}>Anggota Biasa</option>
+            <option value="admin" {% if member and member.role == 'admin' %}selected{% endif %}>Administrator / Pengurus</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Alamat -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1.5">Alamat / Satuan Kerja</label>
+        <textarea name="alamat" rows="2" placeholder="Alamat domisili atau unit kerja BPS Tasikmalaya"
+                  class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">{{ member.alamat if member else 'BPS Kabupaten Tasikmalaya, Jl. Raya Timur Singaparna' }}</textarea>
+      </div>
+
+      {% if not member %}
+      <!-- Simpanan Pokok Awal Otomatis -->
+      <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-emerald-950 block">Entri Simpanan Pokok Awal Otomatis</span>
+            <span class="text-[11px] text-emerald-700">Sesuai AD/ART KOSITAS: Rp 25.000,- dibayarkan 1x saat menjadi anggota</span>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-bold text-emerald-900">Rp</span>
+          <input type="number" name="simpanan_pokok_awal" value="25000" class="w-28 px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-right text-emerald-900">
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <a href="{{ url_for('admin_anggota_list') }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </a>
+        <button type="submit" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-floppy-disk"></i>
+          Simpan Data Anggota
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

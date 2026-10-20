@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Daftar Pembagian SHU Anggota - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-extrabold text-slate-900">Perhitungan & Pembagian SHU</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+          Format RAT KOSITAS (Hal. 13, 24-25)
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Kalkulasi pembagian Sisa Hasil Usaha: 50% Jasa Modal & 50% Jasa Pinjaman</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5 no-print">
+      <!-- Input Simulasi SHU Bruto -->
+      <form method="GET" class="flex items-center gap-1.5">
+        <span class="text-xs font-bold text-slate-500">SHU Bruto:</span>
+        <input type="number" name="total_shu" value="{{ shu.total_shu_bruto }}" step="1000" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 w-36 shadow-sm">
+        <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold">
+          Hitung
+        </button>
+      </form>
+
+      <a href="{{ url_for('admin_laporan_shu_export') }}" 
+         class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i> Unduh Excel
+      </a>
+      <button onclick="window.print()" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-print"></i> Cetak Format RAT
+      </button>
+    </div>
+  </div>
+
+  <!-- KOMPOSISI ALOKASI SHU SESUAI ANGGARAN DASAR -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      <div>
+        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-amber-600"></i>
+          Komposisi Pembagian SHU Bruto (AD/ART KOSITAS)
+        </h2>
+        <p class="text-xs text-slate-500">Total SHU Bruto Koperasi: <span class="font-bold text-slate-800 font-mono">{{ shu.total_shu_bruto|rupiah }}</span></p>
+      </div>
+      <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-right">
+        <span class="text-[10px] uppercase font-bold text-amber-800 block">Total SHU Bagian Anggota (40%)</span>
+        <span class="text-base font-extrabold text-amber-950 font-mono">{{ shu.alokasi.shu_bagian_anggota|rupiah }}</span>
+      </div>
+    </div>
+
+    <!-- Cards Dana-dana -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Dana Pendidikan (2%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_pendidikan|rupiah }}</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Dana Rekreasi (8%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_rekreasi|rupiah }}</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Dana Sosial (6%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_sosial|rupiah }}</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Dana Cadangan (6%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_cadangan|rupiah }}</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Dana Risiko Kredit (3%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_resiko_kredit|rupiah }}</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Dana Pensiun (3%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_pensiun|rupiah }}</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <span class="text-[10px] text-slate-400 block font-semibold">Insentif Pengurus (32%)</span>
+        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.insentif_pengurus|rupiah }}</span>
+      </div>
+    </div>
+
+    <!-- Porsi Anggota: Modal 50% & Pinjaman 50% -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+      <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold text-emerald-950 block">Jasa Modal (50% Bagian Anggota)</span>
+          <span class="text-[11px] text-emerald-700">Dibagi proporsional berdasarkan total simpanan</span>
+        </div>
+        <span class="text-sm font-extrabold text-emerald-900 font-mono">{{ shu.alokasi.jasa_modal_total|rupiah }}</span>
+      </div>
+
+      <div class="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold text-indigo-950 block">Jasa Pinjaman (50% Bagian Anggota)</span>
+          <span class="text-[11px] text-indigo-700">Dibagi proporsional berdasarkan jasa kredit yang dibayar</span>
+        </div>
+        <span class="text-sm font-extrabold text-indigo-900 font-mono">{{ shu.alokasi.jasa_pinjaman_total|rupiah }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE DAFTAR PEMBAGIAN SHU ANGGOTA -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden p-6">
+    
+    <!-- Kop Dokumen -->
+    <div class="text-center pb-5 border-b border-slate-200 mb-5">
+      <h2 class="text-base font-extrabold text-slate-900 tracking-wide">KOSITAS</h2>
+      <h3 class="text-sm font-bold text-slate-700">KOPERASI STATISTIK TASIKMALAYA</h3>
+      <p class="text-xs text-slate-500">Jl. Raya Timur Singaparna KM. 4 Cintaraja - Tasikmalaya</p>
+      <div class="mt-2 text-xs font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 inline-block px-3 py-1 rounded-full border border-amber-200">
+        DAFTAR PEMBAGIAN SHU ANGGOTA
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left border-collapse">
+        <thead class="bg-slate-100 text-slate-700 font-bold border-y-2 border-slate-300">
+          <tr>
+            <th class="py-2.5 px-3 text-center w-10 border border-slate-200">No</th>
+            <th class="py-2.5 px-3 border border-slate-200">No Anggota</th>
+            <th class="py-2.5 px-3 border border-slate-200">Nama Anggota</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Jumlah Simpanan</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">Jumlah Jasa Pinjm.</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">SHU Jasa Modal</th>
+            <th class="py-2.5 px-3 text-right border border-slate-200">SHU Jasa Pinjaman</th>
+            <th class="py-2.5 px-3 text-right font-extrabold border border-slate-200 bg-amber-100/60 text-amber-950">SHU Diterima</th>
+            <th class="py-2.5 px-3 text-center border border-slate-200 no-print">Form SHU</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% set totals_shu = namespace(simp=0, jasa=0, shu_m=0, shu_p=0, shu_tot=0) %}
+          {% for r in shu.rincian_anggota %}
+          {% set totals_shu.simp = totals_shu.simp + r.total_simpanan %}
+          {% set totals_shu.jasa = totals_shu.jasa + r.total_jasa_pinjaman %}
+          {% set totals_shu.shu_m = totals_shu.shu_m + r.shu_jasa_modal %}
+          {% set totals_shu.shu_p = totals_shu.shu_p + r.shu_jasa_pinjaman %}
+          {% set totals_shu.shu_tot = totals_shu.shu_tot + r.shu_total_diterima %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2 px-3 text-center border border-slate-200 font-mono">{{ loop.index }}</td>
+            <td class="py-2 px-3 text-center border border-slate-200 font-mono font-bold">{{ r.no_anggota }}</td>
+            <td class="py-2 px-3 border border-slate-200 font-bold text-slate-800">{{ r.nama }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ r.total_simpanan|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono">{{ r.total_jasa_pinjaman|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono text-emerald-800 font-semibold">{{ r.shu_jasa_modal|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono text-indigo-800 font-semibold">{{ r.shu_jasa_pinjaman|rupiah }}</td>
+            <td class="py-2 px-3 text-right border border-slate-200 font-mono font-extrabold text-amber-900 bg-amber-50/40">
+              {{ r.shu_total_diterima|rupiah }}
+            </td>
+            <td class="py-2 px-3 text-center border border-slate-200 no-print">
+              <a href="{{ url_for('cetak_form_shu', anggota_id=r.anggota_id) }}" target="_blank"
+                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[10px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-print"></i> Form SHU
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-amber-100/70 text-amber-950 font-bold border-y-2 border-amber-400">
+          <tr>
+            <td colspan="3" class="py-3 px-3 text-center uppercase tracking-wider font-extrabold text-xs border border-amber-300">
+              TOTAL SHU ANGGOTA
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-amber-300">{{ totals_shu.simp|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-amber-300">{{ totals_shu.jasa|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-amber-300">{{ totals_shu.shu_m|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold border border-amber-300">{{ totals_shu.shu_p|rupiah }}</td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-amber-950 text-xs border border-amber-300 bg-amber-200/70">
+              {{ totals_shu.shu_tot|rupiah }}
+            </td>
+            <td class="border border-amber-300 no-print"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Tanda Tangan Pengurus Sesuai RAT -->
+    <div class="mt-12 pt-6 grid grid-cols-3 gap-6 text-center text-xs text-slate-700">
+      <div>
+        <p>Ketua KOSITAS,</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">GILANG ABDUL AZIZ, SE, MP.</p>
+      </div>
+      <div>
+        <p>Sekretaris,</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">DAROJATUN</p>
+      </div>
+      <div>
+        <p>Bendahara,</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">ERLINA HARDIYANTI, A.Md.</p>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

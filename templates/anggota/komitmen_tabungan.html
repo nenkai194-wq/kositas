@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+
+{% block title %}Tabungan Hari Raya (Lebaran & Qurban) - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header Banner -->
+  <div class="bg-gradient-to-r from-amber-700 via-amber-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+    <div class="absolute -right-6 -bottom-6 opacity-10 pointer-events-none">
+      <i class="fa-solid fa-kaaba text-9xl"></i>
+    </div>
+    
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-600/50 text-amber-200 mb-2 border border-amber-500/30">
+          <i class="fa-solid fa-moon"></i>
+          Tabungan Berencana Hari Raya • KOSITAS BPS Tasikmalaya
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          Tabungan Lebaran & Qurban Saya
+        </h1>
+        <p class="text-xs sm:text-sm text-amber-100/90 mt-1 max-w-2xl">
+          Rencanakan ibadah qurban dan sukacita Idul Fitri dengan tabungan rutin bulanan. Tabungan dicairkan menjelang hari raya, dan form komitmen baru dibuka pasca pembagian.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        {% if tab_status.can_commit_lebaran or tab_status.can_commit_qurban %}
+        <a href="#form-daftar" class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-plus-circle"></i> Buka / Atur Komitmen Baru
+        </a>
+        {% else %}
+        <div class="px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-700/80 text-amber-200 font-bold text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-lock text-amber-400"></i> Komitmen Terkunci (Belum Dibagikan)
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS KEDUA TABUNGAN HARI RAYA SAYA -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    
+    <!-- KARTU TABUNGAN LEBARAN -->
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-moon"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-extrabold text-slate-900">Tabungan Lebaran (Idul Fitri)</h2>
+              <span class="text-xs text-slate-500">Pencairan menjelang 1 Syawal</span>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 {{ tab_status.badge_class_leb }} rounded-full font-bold text-xs flex items-center gap-1">
+            <i class="fa-solid {{ tab_status.badge_icon_leb }}"></i> {{ tab_status.status_text_leb }}
+          </span>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Saldo Terkumpul</span>
+            <div class="text-2xl font-extrabold text-amber-700 font-mono mt-1">
+              {{ tab_status.saldo_lebaran|rupiah }}
+            </div>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Komitmen Rutin</span>
+            <div class="text-2xl font-extrabold text-slate-800 font-mono mt-1">
+              {% if tab_status.komit_lebaran %}
+                {{ tab_status.komit_lebaran.nominal_per_bulan|rupiah }} <span class="text-xs font-normal text-slate-400">/bln</span>
+              {% else %}
+                <span class="text-slate-400 text-base">Rp 0 / bln</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout Status Aturan KOSITAS Tabungan Lebaran -->
+        <div class="mt-4 p-3 rounded-xl 
+          {% if tab_status.status_code_leb == 'BELUM_DIBAGIKAN' %}bg-blue-50 border border-blue-200 text-blue-900
+          {% elif tab_status.status_code_leb == 'PERLU_INPUT_BARU' %}bg-amber-50 border border-amber-200 text-amber-900
+          {% elif tab_status.status_code_leb == 'AKTIF' %}bg-emerald-50 border border-emerald-200 text-emerald-900
+          {% else %}bg-slate-50 border border-slate-200 text-slate-700{% endif %} text-xs leading-relaxed">
+          <i class="fa-solid 
+            {% if tab_status.status_code_leb == 'BELUM_DIBAGIKAN' %}fa-lock text-blue-600
+            {% elif tab_status.status_code_leb == 'PERLU_INPUT_BARU' %}fa-triangle-exclamation text-amber-600
+            {% elif tab_status.status_code_leb == 'AKTIF' %}fa-circle-check text-emerald-600
+            {% else %}fa-info-circle text-slate-500{% endif %} mr-1"></i>
+          {{ tab_status.message_leb }}
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <span class="text-xs text-slate-500">Min. komitmen: Rp 50.000/bln</span>
+        {% if tab_status.can_commit_lebaran %}
+        <button onclick="setJenisTabungan('Lebaran')" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-pen-to-square"></i> {% if tab_status.status_code_leb == 'BELUM_TERDAFTAR' %}Daftar Komitmen Lebaran{% else %}Atur Komitmen Lebaran{% endif %}
+        </button>
+        {% else %}
+        <button disabled class="px-3.5 py-1.5 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5" title="Tabungan periode berjalan belum dibagikan, belum bisa mengatur komitmen baru">
+          <i class="fa-solid fa-lock text-slate-400"></i> Terkunci (Belum Dibagikan)
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- KARTU TABUNGAN QURBAN -->
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-kaaba"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-extrabold text-slate-900">Tabungan Qurban (Idul Adha)</h2>
+              <span class="text-xs text-slate-500">Pencairan menjelang 10 Dzulhijjah</span>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 {{ tab_status.badge_class_qur }} rounded-full font-bold text-xs flex items-center gap-1">
+            <i class="fa-solid {{ tab_status.badge_icon_qur }}"></i> {{ tab_status.status_text_qur }}
+          </span>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Saldo Terkumpul</span>
+            <div class="text-2xl font-extrabold text-teal-700 font-mono mt-1">
+              {{ tab_status.saldo_qurban|rupiah }}
+            </div>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Komitmen Rutin</span>
+            <div class="text-2xl font-extrabold text-slate-800 font-mono mt-1">
+              {% if tab_status.komit_qurban %}
+                {{ tab_status.komit_qurban.nominal_per_bulan|rupiah }} <span class="text-xs font-normal text-slate-400">/bln</span>
+              {% else %}
+                <span class="text-slate-400 text-base">Rp 0 / bln</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout Status Aturan KOSITAS Tabungan Qurban -->
+        <div class="mt-4 p-3 rounded-xl 
+          {% if tab_status.status_code_qur == 'BELUM_DIBAGIKAN' %}bg-blue-50 border border-blue-200 text-blue-900
+          {% elif tab_status.status_code_qur == 'PERLU_INPUT_BARU' %}bg-amber-50 border border-amber-200 text-amber-900
+          {% elif tab_status.status_code_qur == 'AKTIF' %}bg-teal-50 border border-teal-200 text-teal-900
+          {% else %}bg-slate-50 border border-slate-200 text-slate-700{% endif %} text-xs leading-relaxed">
+          <i class="fa-solid 
+            {% if tab_status.status_code_qur == 'BELUM_DIBAGIKAN' %}fa-lock text-blue-600
+            {% elif tab_status.status_code_qur == 'PERLU_INPUT_BARU' %}fa-triangle-exclamation text-amber-600
+            {% elif tab_status.status_code_qur == 'AKTIF' %}fa-circle-check text-teal-600
+            {% else %}fa-info-circle text-slate-500{% endif %} mr-1"></i>
+          {{ tab_status.message_qur }}
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <span class="text-xs text-slate-500">Min. komitmen: Rp 50.000/bln</span>
+        {% if tab_status.can_commit_qurban %}
+        <button onclick="setJenisTabungan('Qurban')" class="px-3.5 py-1.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-pen-to-square"></i> {% if tab_status.status_code_qur == 'BELUM_TERDAFTAR' %}Daftar Komitmen Qurban{% else %}Atur Komitmen Qurban{% endif %}
+        </button>
+        {% else %}
+        <button disabled class="px-3.5 py-1.5 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5" title="Tabungan periode berjalan belum dibagikan, belum bisa mengatur komitmen baru">
+          <i class="fa-solid fa-lock text-slate-400"></i> Terkunci (Belum Dibagikan)
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FORM INPUT KOMITMEN TABUNGAN BARU PASCA PEMBAGIAN -->
+  <div id="form-daftar" class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-8">
+    <div class="max-w-3xl">
+      <div class="flex items-center gap-2.5 mb-2">
+        <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-sm">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </div>
+        <h2 class="text-lg font-extrabold text-slate-900">Form Pendaftaran Komitmen Tabungan Periode Baru</h2>
+      </div>
+      <p class="text-xs text-slate-500 leading-relaxed">
+        Gunakan form ini untuk membuka siklus tabungan baru setelah pembagian tabungan Lebaran / Qurban atau mendaftarkan komitmen bagi anggota baru KOSITAS.
+      </p>
+
+      {% if not tab_status.can_commit_lebaran and not tab_status.can_commit_qurban %}
+      <!-- Banner Pengaturan Komitmen Terkunci -->
+      <div class="mt-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-950 space-y-2">
+        <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-blue-900">
+          <i class="fa-solid fa-lock text-blue-600 text-sm"></i> Pengaturan Komitmen Saat Ini Terkunci
+        </div>
+        <p class="text-xs text-blue-800 leading-relaxed">
+          Sesuai aturan KOSITAS, komitmen Tabungan Lebaran dan Tabungan Qurban <strong>TIDAK DAPAT DIAJUKAN</strong> selama tabungan periode berjalan belum dibagikan oleh koperasi (kecuali bagi anggota yang baru masuk).
+        </p>
+        <div class="text-[11px] text-blue-700 font-medium space-y-0.5">
+          <div>• <strong>Tabungan Lebaran:</strong> {{ tab_status.message_leb }}</div>
+          <div>• <strong>Tabungan Qurban:</strong> {{ tab_status.message_qur }}</div>
+        </div>
+        <p class="text-[11px] text-slate-500 pt-1">
+          Form pendaftaran komitmen periode berikutnya akan terbuka otomatis segera setelah pencairan/pembagian tabungan dilaksanakan menjelang hari raya.
+        </p>
+      </div>
+      {% endif %}
+
+      <form action="{{ url_for('anggota_komitmen_tabungan') }}" method="POST" class="mt-6 space-y-6">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          
+          <!-- Jenis Tabungan -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Jenis Tabungan <span class="text-red-500">*</span>
+            </label>
+            <select name="jenis_tabungan" id="input_jenis_tabungan" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              {% if tab_status.can_commit_lebaran %}
+              <option value="Lebaran">🌙 Tabungan Lebaran (Idul Fitri)</option>
+              {% endif %}
+              {% if tab_status.can_commit_qurban %}
+              <option value="Qurban">🕋 Tabungan Qurban (Idul Adha)</option>
+              {% endif %}
+              {% if not tab_status.can_commit_lebaran and not tab_status.can_commit_qurban %}
+              <option value="" disabled selected>-- Semua Tabungan Sedang Berjalan (Belum Dibagikan) --</option>
+              {% endif %}
+            </select>
+            {% if not tab_status.can_commit_lebaran and tab_status.can_commit_qurban %}
+            <p class="text-[10px] text-slate-400 mt-1">*Tabungan Lebaran sedang berjalan dan belum dibagikan.</p>
+            {% elif tab_status.can_commit_lebaran and not tab_status.can_commit_qurban %}
+            <p class="text-[10px] text-slate-400 mt-1">*Tabungan Qurban sedang berjalan dan belum dibagikan.</p>
+            {% endif %}
+          </div>
+
+          <!-- Tahun Periode -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Tahun Target Pencairan <span class="text-red-500">*</span>
+            </label>
+            <select name="tahun_periode" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="{{ current_year }}" selected>{{ current_year }}</option>
+              <option value="{{ current_year + 1 }}">{{ current_year + 1 }}</option>
+              <option value="{{ current_year + 2 }}">{{ current_year + 2 }}</option>
+            </select>
+          </div>
+
+          <!-- Nominal Komitmen Per Bulan -->
+          <div class="sm:col-span-2 bg-amber-50/50 p-4 rounded-2xl border border-amber-200/80">
+            <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+              Komitmen Tabungan Tiap Bulan (Rp) <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">Rp</span>
+              <input type="number" name="nominal_per_bulan" id="input_nominal" min="50000" step="10000" value="100000" required
+                     class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+
+            <!-- Quick Preset Buttons -->
+            <div class="flex flex-wrap items-center gap-2 mt-2.5">
+              <span class="text-[11px] text-slate-500 font-medium">Pilihan Cepat:</span>
+              <button type="button" onclick="setNominal(50000)" class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">Rp 50.000</button>
+              <button type="button" onclick="setNominal(100000)" class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">Rp 100.000</button>
+              <button type="button" onclick="setNominal(150000)" class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">Rp 150.000</button>
+              <button type="button" onclick="setNominal(200000)" class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">Rp 200.000</button>
+              <button type="button" onclick="setNominal(500000)" class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">Rp 500.000</button>
+            </div>
+            <p class="text-[11px] text-amber-800 mt-2">
+              <i class="fa-solid fa-circle-info mr-1"></i> Jumlah ini akan dimasukkan otomatis ke dalam daftar pemotongan bulanan KOSITAS Anda.
+            </p>
+          </div>
+
+          <!-- Metode Penyetoran -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Metode Penyetoran <span class="text-red-500">*</span>
+            </label>
+            <select name="metode_setor" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="Potong Gaji" selected>Potong Gaji Otomatis (Rekomendasi)</option>
+              <option value="Potongan TK">Potongan TK (Tunjangan Kinerja)</option>
+              <option value="Tunai">Setor Tunai ke Kasir</option>
+              <option value="Transfer">Transfer Mandiri ke Bank Koperasi</option>
+            </select>
+          </div>
+
+          <!-- Setoran Awal (Opsional) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Setoran Awal (Opsional)
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">Rp</span>
+              <input type="number" name="setoran_awal" min="0" step="5000" value="0"
+                     class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Kosongkan (0) jika murni potong gaji pertama bulan depan</p>
+          </div>
+
+          <!-- Keterangan / Target Tabungan -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Catatan / Target Pribadi
+            </label>
+            <input type="text" name="keterangan" placeholder="Contoh: Target Qurban 1 Kambing 2026 atau Mudik Bersama Keluarga 2026"
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          {% if tab_status.can_commit_lebaran or tab_status.can_commit_qurban %}
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-md shadow-amber-600/20 transition flex items-center gap-2">
+            <i class="fa-solid fa-save"></i> Daftarkan Komitmen Tabungan Baru
+          </button>
+          {% else %}
+          <button type="button" disabled class="px-6 py-2.5 rounded-xl bg-slate-200 text-slate-400 font-bold text-xs cursor-not-allowed flex items-center gap-2" title="Tabungan periode berjalan belum dibagikan">
+            <i class="fa-solid fa-lock"></i> Komitmen Terkunci (Tabungan Belum Dibagikan)
+          </button>
+          {% endif %}
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- RIWAYAT KOMITMEN & PEMBAGIAN TABUNGAN SAYA -->
+  <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-extrabold text-slate-900">Riwayat Komitmen & Pembagian Tabungan Saya</h2>
+        <p class="text-xs text-slate-500">Catatan siklus keikutsertaan dan pencairan tabungan hari raya sebelumnya</p>
+      </div>
+      <span class="text-xs text-slate-400 font-mono">{{ tab_status.all_komitmen|length }} catatan</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+            <th class="py-3 px-4">Tgl Daftar</th>
+            <th class="py-3 px-4">Jenis Tabungan</th>
+            <th class="py-3 px-4">Tahun Periode</th>
+            <th class="py-3 px-4 text-right">Komitmen / Bulan</th>
+            <th class="py-3 px-4">Metode</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4">Tgl Pembagian</th>
+            <th class="py-3 px-4 text-right">Total Diterima</th>
+            <th class="py-3 px-4 text-center">Slip</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+          {% for k in tab_status.all_komitmen %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 px-4 text-slate-500 font-mono">{{ k.tanggal_daftar|format_date }}</td>
+            <td class="py-3 px-4">
+              {% if k.jenis_tabungan == 'Lebaran' %}
+                <span class="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[11px]">
+                  <i class="fa-solid fa-moon"></i> Lebaran
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 text-[11px]">
+                  <i class="fa-solid fa-kaaba"></i> Qurban
+                </span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-4 font-mono font-bold">{{ k.tahun_periode }}</td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-slate-800">
+              {{ k.nominal_per_bulan|rupiah }}
+            </td>
+            <td class="py-3 px-4 text-slate-500">{{ k.metode_setor }}</td>
+            <td class="py-3 px-4 text-center">
+              {% if k.status == 'Aktif' %}
+                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">Aktif Berjalan</span>
+              {% elif k.status == 'Selesai Dibagikan' %}
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-bold text-[10px]">Selesai Dibagikan</span>
+              {% else %}
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold text-[10px]">{{ k.status }}</span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-4 text-slate-500 font-mono">
+              {{ k.tanggal_dibagikan|format_date if k.tanggal_dibagikan else '-' }}
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+              {{ k.total_dibagikan|rupiah if k.total_dibagikan else '-' }}
+            </td>
+            <td class="py-3 px-4 text-center">
+              {% if k.status == 'Selesai Dibagikan' and k.total_dibagikan > 0 %}
+              <a href="{{ url_for('cetak_slip_pembagian_tabungan', id=k.id) }}" target="_blank"
+                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition">
+                <i class="fa-solid fa-print"></i> Slip
+              </a>
+              {% else %}
+              -
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="py-8 text-center text-slate-400">
+              <i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>
+              Belum ada riwayat komitmen tabungan khusus Anda.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setNominal(amount) {
+    document.getElementById('input_nominal').value = amount;
+  }
+
+  function setJenisTabungan(jenis) {
+    document.getElementById('input_jenis_tabungan').value = jenis;
+    document.getElementById('form-daftar').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+{% endblock %}
