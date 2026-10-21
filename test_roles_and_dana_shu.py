@@ -201,5 +201,35 @@ class TestRolesAndDanaSHU(unittest.TestCase):
         gilang = models.get_anggota_by_id(7)
         self.assertEqual(gilang['role'], 'superadmin')
 
+    def test_07_master_data_login_sebagai_anggota_superadmin_only(self):
+        """Hanya Superadmin yang bisa masuk ke login sebagai anggota dari form master data."""
+        # 1. Superadmin (ID 7 - Gilang) melihat master data
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 7
+            sess['role'] = 'superadmin'
+
+        res_sa = self.client.get('/admin/anggota')
+        self.assertEqual(res_sa.status_code, 200)
+        self.assertIn(b'title="Login Sebagai Anggota Ini (Khusus Superadmin)"', res_sa.data)
+
+        # Superadmin berhasil login sebagai Dama (ID 1)
+        res_switch = self.client.get('/switch-user/1', follow_redirects=False)
+        self.assertEqual(res_switch.status_code, 302)
+        self.assertEqual(res_switch.location, '/anggota/dashboard')
+
+        # 2. Admin (ID 19 - Erlina) melihat master data
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 19
+            sess['role'] = 'admin'
+
+        res_ad = self.client.get('/admin/anggota')
+        self.assertEqual(res_ad.status_code, 200)
+        self.assertIn(b'Akses Terkunci: Hanya Superadmin', res_ad.data)
+        self.assertNotIn(b'title="Login Sebagai Anggota Ini (Khusus Superadmin)"', res_ad.data)
+
+        # Admin DITOLAK saat mencoba akses /switch-user/1 untuk anggota biasa
+        res_ad_switch = self.client.get('/switch-user/1', follow_redirects=True)
+        self.assertIn(b'Akses ditolak! Fitur login sebagai anggota ini hanya dapat dilakukan oleh Superadmin', res_ad_switch.data)
+
 if __name__ == '__main__':
     unittest.main()

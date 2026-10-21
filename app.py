@@ -204,18 +204,28 @@ def logout():
 @app.route('/switch-user/<int:user_id>')
 def switch_user(user_id):
     """
-    Fitur instan untuk switch akun saat demo/pengujian
+    Fitur beralih akun.
+    Jika sedang login sebagai Admin operasional, tidak diperbolehkan login sebagai akun anggota lain.
+    Hanya Superadmin yang berwenang login sebagai anggota dari form master data anggota.
     """
-    user = models.get_anggota_by_id(user_id)
-    if user:
-        session['user_id'] = user['id']
-        session['role'] = user['role']
-        flash(f"Beralih akun sebagai: {user['nama']} ({user['jabatan']} - Role: {user['role'].upper()})", 'info')
-        if user['role'] in ['admin', 'superadmin']:
-            return redirect(url_for('admin_dashboard'))
-        return redirect(url_for('anggota_dashboard'))
-    flash('User tidak ditemukan!', 'danger')
-    return redirect(url_for('login'))
+    curr = get_current_user()
+    target_user = models.get_anggota_by_id(user_id)
+    if not target_user:
+        flash('User tidak ditemukan!', 'danger')
+        return redirect(url_for('login'))
+
+    # Proteksi: Jika sedang login sebagai Admin (bukan Superadmin) dan mencoba switch ke anggota lain
+    if curr and curr.get('role') == 'admin':
+        if target_user['id'] != curr['id'] and target_user.get('role') == 'anggota':
+            flash('Akses ditolak! Fitur login sebagai anggota ini hanya dapat dilakukan oleh Superadmin (Ketua Koperasi / SysAdmin).', 'danger')
+            return redirect(url_for('admin_anggota_list'))
+
+    session['user_id'] = target_user['id']
+    session['role'] = target_user['role']
+    flash(f"Beralih akun sebagai: {target_user['nama']} ({target_user['jabatan']} - Role: {target_user['role'].upper()})", 'info')
+    if target_user['role'] in ['admin', 'superadmin']:
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('anggota_dashboard'))
 
 # ----------------- ADMIN ROUTES -----------------
 @app.route('/admin/dashboard')

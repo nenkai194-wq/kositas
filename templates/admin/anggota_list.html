@@ -122,10 +122,17 @@
                    class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-800 flex items-center justify-center transition">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </a>
-                <a href="{{ url_for('switch_user', user_id=m.id) }}" title="Login Sebagai Anggota Ini" 
-                   class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center transition">
+                {% if current_user and current_user.role == 'superadmin' %}
+                <a href="{{ url_for('switch_user', user_id=m.id) }}" title="Login Sebagai Anggota Ini (Khusus Superadmin)" 
+                   class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center transition border border-emerald-200 shadow-sm">
                   <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
                 </a>
+                {% else %}
+                <span title="Akses Terkunci: Hanya Superadmin yang berwenang login sebagai anggota ini" 
+                      class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 flex items-center justify-center cursor-not-allowed border border-slate-200/60">
+                  <i class="fa-solid fa-lock text-xs"></i>
+                </span>
+                {% endif %}
               </div>
             </td>
           </tr>

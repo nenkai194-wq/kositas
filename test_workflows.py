@@ -5,8 +5,14 @@ import database
 def test_full_workflows():
     client = app.test_client()
 
+    # Bersihkan jika ada data KST-099 dari run sebelumnya
+    conn = database.get_db()
+    conn.execute("DELETE FROM anggota WHERE no_anggota = 'KST-099'")
+    conn.commit()
+    conn.close()
+
     print("--- 1. Testing Login & Session ---")
-    r = client.post('/login', data={'username': 'admin', 'password': '123456'}, follow_redirects=True)
+    r = client.post('/login', data={'username': 'superadmin', 'password': '123456'}, follow_redirects=True)
     assert r.status_code == 200
     print("Admin login successfully verified!")
 
