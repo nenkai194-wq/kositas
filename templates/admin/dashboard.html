@@ -227,14 +227,50 @@
             <td class="py-2.5 text-right font-bold text-slate-900">{{ req.nominal|rupiah }}</td>
             <td class="py-2.5 text-slate-600 max-w-xs truncate">{{ req.alasan }}</td>
             <td class="py-2.5 text-center">
-              <form method="POST" action="{{ url_for('admin_pengajuan_proses', id=req.id) }}" class="inline-flex gap-1.5">
-                <button type="submit" name="action" value="TERIMA" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition">
-                  <i class="fa-solid fa-check mr-0.5"></i> Setujui
+              <div class="inline-flex items-center gap-1.5">
+                {% if req.jenis == 'PINJAMAN' %}
+                <button type="button" 
+                        onclick="openModalApprovalPinjaman(this)"
+                        data-id="{{ req.id }}"
+                        data-nopengajuan="{{ req.no_pengajuan }}"
+                        data-nama="{{ req.nama_anggota }}"
+                        data-noanggota="{{ req.no_anggota }}"
+                        data-kategori="{{ req.kategori }}"
+                        data-nominal="{{ req.nominal }}"
+                        data-tenor="{{ req.tenor_bulan }}"
+                        data-alasan="{{ req.alasan|e }}"
+                        data-tanggal="{{ req.tanggal_pengajuan }}"
+                        class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                        title="Verifikasi & Tentukan Margin Pinjaman oleh Ketua Koperasi">
+                  <i class="fa-solid fa-stamp text-[10px] text-amber-300"></i> Setujui & Margin
                 </button>
-                <button type="submit" name="action" value="TOLAK" class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition">
-                  <i class="fa-solid fa-xmark mr-0.5"></i> Tolak
+                {% else %}
+                <button type="button" 
+                        onclick="openModalApprovalSimpanan(this)"
+                        data-id="{{ req.id }}"
+                        data-nopengajuan="{{ req.no_pengajuan }}"
+                        data-nama="{{ req.nama_anggota }}"
+                        data-kategori="{{ req.kategori }}"
+                        data-nominal="{{ req.nominal }}"
+                        data-alasan="{{ req.alasan|e }}"
+                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                        title="Sahkan & Cairkan Tabungan">
+                  <i class="fa-solid fa-check text-[10px]"></i> Cairkan
                 </button>
-              </form>
+                {% endif %}
+
+                <button type="button" 
+                        onclick="openModalTolakPengajuan(this)"
+                        data-id="{{ req.id }}"
+                        data-nopengajuan="{{ req.no_pengajuan }}"
+                        data-nama="{{ req.nama_anggota }}"
+                        data-jenis="{{ req.jenis }}: {{ req.kategori }}"
+                        data-nominal="{{ req.nominal|rupiah }}"
+                        class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                        title="Tolak Pengajuan">
+                  <i class="fa-solid fa-xmark text-[10px]"></i> Tolak
+                </button>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -332,6 +368,295 @@
   </div>
 
 </div>
+
+<!-- ======================================================== -->
+<!-- MODAL PERTIMBANGAN MARGIN KETUA KOPERASI & APPROVAL PINJAMAN -->
+<!-- ======================================================== -->
+<div id="modalApprovalPinjaman" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden transform transition-all my-8">
+    
+    <!-- Modal Header -->
+    <div class="bg-gradient-to-r from-emerald-800 to-teal-900 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 text-lg border border-white/10">
+          <i class="fa-solid fa-stamp"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold">Pertimbangan & Persetujuan Pinjaman</h3>
+          <p class="text-xs text-emerald-200">Kewenangan Penetapan Margin & Lama Angsuran oleh Ketua Koperasi</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModalApprovalPinjaman()" class="text-emerald-200 hover:text-white text-lg p-1.5 transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Modal Form -->
+    <form id="formApprovalPinjaman" method="POST" action="" class="p-6 space-y-4">
+      <input type="hidden" name="action" value="TERIMA">
+      
+      <!-- Box Ringkasan Pengajuan Anggota -->
+      <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div>
+          <span class="text-slate-400 block text-[11px] font-medium">No Pengajuan & Tanggal</span>
+          <span id="txtApprNoPengajuan" class="font-bold font-mono text-slate-800">REQ-...</span>
+          <span id="txtApprTanggal" class="text-slate-500 block text-[10px]">2026-10-21</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[11px] font-medium">Nama Anggota Pemohon</span>
+          <span id="txtApprNama" class="font-bold text-slate-900">Nama Anggota</span>
+          <span id="txtApprNoAnggota" class="text-slate-500 block text-[10px]">NIP/No: -</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[11px] font-medium">Jenis Pinjaman</span>
+          <span id="txtApprKategori" class="inline-block px-2 py-0.5 mt-0.5 rounded font-bold text-emerald-800 bg-emerald-100 border border-emerald-300">JAPAN</span>
+        </div>
+        <div class="sm:col-span-3 pt-2 border-t border-slate-200/60">
+          <span class="text-slate-400 block text-[11px] font-medium">Keperluan / Alasan Pengajuan:</span>
+          <p id="txtApprAlasan" class="text-slate-700 italic mt-0.5 text-xs bg-white p-2 rounded border border-slate-200">Kebutuhan...</p>
+        </div>
+      </div>
+
+      <!-- Form Inputs: Plafon, Tenor -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Plafon Disetujui -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">
+            Plafon Pinjaman Disetujui (Rp) <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-bold">Rp</span>
+            <input type="number" name="plafon_pokok" id="inputApprPlafon" min="100000" step="50000" required oninput="calcApprovalSimulasi()"
+                   class="w-full pl-9 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+          </div>
+          <span class="text-[10px] text-slate-400 mt-1 block">Dapat disesuaikan jika disetujui sebagian</span>
+        </div>
+
+        <!-- Tenor Bulan -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">
+            Lama Waktu Cicilan / Tenor (Bulan) <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input type="number" name="tenor_bulan" id="inputApprTenor" min="1" max="60" required oninput="onTenorChange()"
+                   class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+            <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 text-xs font-bold">Bulan</span>
+          </div>
+          <span class="text-[10px] text-slate-400 mt-1 block">Jumlah bulan masa angsuran disetujui</span>
+        </div>
+      </div>
+
+      <!-- Penetapan Margin oleh Ketua Koperasi (Mengikuti Tenor) -->
+      <div class="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-percent text-emerald-600"></i> Ketetapan Suku Margin Ketua Koperasi
+          </span>
+          <span class="text-[11px] text-emerald-700 italic">Margin mengikuti lama waktu cicilan</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- Rate Margin Per Bulan -->
+          <div>
+            <label class="block text-[11px] font-bold text-emerald-950 mb-1">Rate Margin / Bulan (%)</label>
+            <div class="relative">
+              <input type="number" step="0.05" name="margin_per_bulan" id="inputApprRateBulan" value="1.0" required oninput="onRateBulanChange()"
+                     class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-950 focus:ring-2 focus:ring-emerald-500">
+              <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-emerald-600 text-xs font-bold">%/bln</span>
+            </div>
+          </div>
+
+          <!-- Total Margin Persen -->
+          <div>
+            <label class="block text-[11px] font-bold text-emerald-950 mb-1">Total Margin (%)</label>
+            <div class="relative">
+              <input type="number" step="0.1" name="margin_persen" id="inputApprMarginPersen" value="10.0" required oninput="onTotalMarginChange()"
+                     class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-950 focus:ring-2 focus:ring-emerald-500">
+              <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-emerald-600 text-xs font-bold">%</span>
+            </div>
+          </div>
+
+          <!-- Total Nominal Margin -->
+          <div>
+            <label class="block text-[11px] font-bold text-emerald-950 mb-1">Total Nominal Margin</label>
+            <input type="hidden" name="margin_nominal" id="inputApprMarginNominal">
+            <div id="txtApprMarginNominal" class="w-full px-3 py-2 bg-emerald-100/70 border border-emerald-300 rounded-lg text-xs font-bold font-mono text-emerald-900 flex items-center">
+              Rp 0
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Rate Buttons Preset -->
+        <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+          <span class="text-emerald-800 text-[10px] font-medium mr-1">Preset Cepat:</span>
+          <button type="button" onclick="setPresetRate(0.8)" class="px-2 py-0.5 rounded bg-white hover:bg-emerald-200 border border-emerald-300 text-emerald-800 text-[10px] font-bold transition">0.8% / bln</button>
+          <button type="button" onclick="setPresetRate(1.0)" class="px-2 py-0.5 rounded bg-white hover:bg-emerald-200 border border-emerald-300 text-emerald-800 text-[10px] font-bold transition">1.0% / bln (Standar)</button>
+          <button type="button" onclick="setPresetRate(1.25)" class="px-2 py-0.5 rounded bg-white hover:bg-emerald-200 border border-emerald-300 text-emerald-800 text-[10px] font-bold transition">1.25% / bln</button>
+          <button type="button" onclick="setPresetRate(1.5)" class="px-2 py-0.5 rounded bg-white hover:bg-emerald-200 border border-emerald-300 text-emerald-800 text-[10px] font-bold transition">1.5% / bln</button>
+          <button type="button" onclick="setPresetRate(2.0)" class="px-2 py-0.5 rounded bg-white hover:bg-emerald-200 border border-emerald-300 text-emerald-800 text-[10px] font-bold transition">2.0% / bln (Bon Putih)</button>
+        </div>
+      </div>
+
+      <!-- Live Calculation Card: Potongan Cicilan & Dana Bersih -->
+      <div class="bg-gradient-to-br from-slate-900 to-emerald-950 text-white p-4 rounded-xl shadow-inner space-y-3">
+        <div class="flex items-center justify-between border-b border-emerald-800/60 pb-2">
+          <span class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-calculator"></i> Simulasi Angsuran & Dana Bersih
+          </span>
+          <span id="txtSimulasiTenorTag" class="text-[10px] bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded font-mono font-bold">10 Bulan</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[10px]">Angsuran Pokok/Bln</span>
+            <span id="txtSimulasiPokokBulan" class="font-bold font-mono text-slate-200">Rp 0</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">Angsuran Margin/Bln</span>
+            <span id="txtSimulasiMarginBulan" class="font-bold font-mono text-emerald-400">Rp 0</span>
+          </div>
+          <div class="sm:col-span-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2 text-right">
+            <span class="text-emerald-300 block text-[10px] uppercase font-bold tracking-wider">Total Potong Gaji / Bulan</span>
+            <span id="txtSimulasiTotalAngsuran" class="text-base font-extrabold font-mono text-emerald-300">Rp 0</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-800/50 text-[11px]">
+          <div>
+            <span class="text-slate-400 block text-[10px]">Biaya Provisi (1%)</span>
+            <span id="txtSimulasiProvisi" class="font-mono text-slate-300">Rp 0</span>
+          </div>
+          <div id="boxSimulasiDrk">
+            <span class="text-slate-400 block text-[10px]">Biaya DRK (0.5%)</span>
+            <span id="txtSimulasiDrk" class="font-mono text-slate-300">Rp 0</span>
+          </div>
+          <div class="text-right">
+            <span class="text-slate-400 block text-[10px]">Estimasi Dana Bersih</span>
+            <span id="txtSimulasiDanaBersih" class="font-bold font-mono text-white text-xs">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Catatan Pertimbangan Ketua Koperasi -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-xs font-bold text-slate-700">
+            Catatan Pertimbangan Ketua Koperasi / Admin
+          </label>
+          <button type="button" onclick="generateAutoCatatan()" class="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Isi Rekomendasi Otomatis
+          </button>
+        </div>
+        <textarea name="catatan_admin" id="inputApprCatatan" rows="2" placeholder="Contoh: Disetujui oleh Ketua Koperasi dengan suku margin 1.0%/bulan selama 10 bulan sesuai batas kemampuan potong gaji."
+                  class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"></textarea>
+      </div>
+
+      <!-- Tombol Aksi Modal -->
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalApprovalPinjaman()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </button>
+        <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check-double"></i> Sahkan & Setujui Pinjaman
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL APPROVAL PENARIKAN SIMPANAN                        -->
+<!-- ======================================================== -->
+<div id="modalApprovalSimpanan" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-8">
+    <div class="bg-emerald-700 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-hand-holding-dollar text-lg text-emerald-200"></i>
+        <h3 class="text-sm font-bold">Verifikasi Pencairan Simpanan</h3>
+      </div>
+      <button type="button" onclick="closeModalApprovalSimpanan()" class="text-emerald-200 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form id="formApprovalSimpanan" method="POST" action="" class="p-6 space-y-4">
+      <input type="hidden" name="action" value="TERIMA">
+
+      <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
+        <span class="text-emerald-700 text-[10px] font-bold block uppercase tracking-wider">Detail Penarikan:</span>
+        <div class="font-bold text-slate-900 text-sm" id="txtSimpNoPengajuan">REQ-...</div>
+        <div class="font-semibold text-slate-800" id="txtSimpNama">Anggota</div>
+        <div class="text-slate-700 text-xs" id="txtSimpKategori">Tabungan: Simpanan -</div>
+        <div class="text-emerald-900 font-mono font-bold text-base pt-1" id="txtSimpNominal">Rp 0</div>
+        <div class="text-slate-600 text-[11px] italic bg-white p-2 rounded border border-emerald-100 mt-2" id="txtSimpAlasan">Alasan...</div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">
+          Catatan Admin / Pengurus (Opsional)
+        </label>
+        <textarea name="catatan_admin" rows="2" placeholder="Catatan bukti transfer atau nomor referensi pencairan..."
+                  class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalApprovalSimpanan()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </button>
+        <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check"></i> Sahkan & Cairkan Tabungan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL TOLAK PENGAJUAN                                    -->
+<!-- ======================================================== -->
+<div id="modalTolakPengajuan" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-8">
+    <div class="bg-rose-600 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        <h3 class="text-sm font-bold">Tolak Pengajuan Anggota</h3>
+      </div>
+      <button type="button" onclick="closeModalTolakPengajuan()" class="text-rose-200 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form id="formTolakPengajuan" method="POST" action="" class="p-6 space-y-4">
+      <input type="hidden" name="action" value="TOLAK">
+
+      <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
+        <span class="text-rose-600 text-[10px] font-bold block uppercase tracking-wider">Pengajuan Yang Ditolak:</span>
+        <div class="font-bold text-sm text-slate-900" id="txtTolakNoPengajuan">REQ-...</div>
+        <div class="text-slate-800 font-semibold" id="txtTolakNama">Pemohon: -</div>
+        <div class="text-slate-600 text-[11px]" id="txtTolakDetail">Jenis: - | Nominal: -</div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">
+          Alasan Penolakan <span class="text-red-500">*</span>
+        </label>
+        <textarea name="catatan_admin" required rows="3" placeholder="Jelaskan alasan penolakan agar anggota mendapatkan pertimbangan yang jelas (contoh: Kapasitas potong gaji tidak mencukupi, harap selesaikan pinjaman sebelumnya, dll.)"
+                  class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-rose-500 focus:bg-white transition"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalTolakPengajuan()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </button>
+        <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-600/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-ban"></i> Konfirmasi Tolak
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -406,5 +731,174 @@
       cutout: '68%'
     }
   });
+
+  // --- JAVASCRIPT APPROVAL PENGAJUAN ONLINE & PERTIMBANGAN MARGIN KETUA KOPERASI ---
+  let currentKategori = '';
+
+  function formatRupiah(num) {
+    return 'Rp ' + Number(Math.round(num || 0)).toLocaleString('id-ID');
+  }
+
+  function openModalApprovalPinjaman(btn) {
+    const id = btn.getAttribute('data-id');
+    const noPengajuan = btn.getAttribute('data-nopengajuan');
+    const nama = btn.getAttribute('data-nama');
+    const noAnggota = btn.getAttribute('data-noanggota');
+    const kategori = btn.getAttribute('data-kategori');
+    const nominal = parseFloat(btn.getAttribute('data-nominal') || 0);
+    const tenor = parseInt(btn.getAttribute('data-tenor') || 1);
+    const alasan = btn.getAttribute('data-alasan') || '-';
+    const tanggal = btn.getAttribute('data-tanggal') || '';
+
+    currentKategori = kategori;
+
+    document.getElementById('formApprovalPinjaman').action = `/admin/pengajuan/${id}/proses`;
+    document.getElementById('txtApprNoPengajuan').textContent = noPengajuan;
+    document.getElementById('txtApprTanggal').textContent = tanggal;
+    document.getElementById('txtApprNama').textContent = nama;
+    document.getElementById('txtApprNoAnggota').textContent = 'No Anggota: ' + noAnggota;
+    document.getElementById('txtApprKategori').textContent = kategori;
+    document.getElementById('txtApprAlasan').textContent = `"${alasan}"`;
+
+    document.getElementById('inputApprPlafon').value = nominal;
+    document.getElementById('inputApprTenor').value = tenor;
+
+    // Default rate margin per bulan sesuai ketentuan KOSITAS
+    let defaultRate = 1.0;
+    if (kategori === 'Bon Putih') {
+      defaultRate = 2.0;
+    } else if (kategori === 'Barang') {
+      defaultRate = 1.5;
+    } else if (kategori === 'JAPAN' || kategori === 'JAPEN') {
+      defaultRate = 1.0;
+    }
+    document.getElementById('inputApprRateBulan').value = defaultRate;
+
+    // Tampilkan / sembunyikan DRK (khusus JAPAN)
+    const boxDrk = document.getElementById('boxSimulasiDrk');
+    if (boxDrk) {
+      if (kategori.toUpperCase().includes('JAPAN')) {
+        boxDrk.classList.remove('hidden');
+      } else {
+        boxDrk.classList.add('hidden');
+      }
+    }
+
+    onRateBulanChange();
+    document.getElementById('inputApprCatatan').value = '';
+    generateAutoCatatan();
+
+    document.getElementById('modalApprovalPinjaman').classList.remove('hidden');
+  }
+
+  function closeModalApprovalPinjaman() {
+    document.getElementById('modalApprovalPinjaman').classList.add('hidden');
+  }
+
+  function onTenorChange() {
+    onRateBulanChange();
+  }
+
+  function setPresetRate(rate) {
+    document.getElementById('inputApprRateBulan').value = rate;
+    onRateBulanChange();
+  }
+
+  function onRateBulanChange() {
+    const rateBulan = parseFloat(document.getElementById('inputApprRateBulan').value) || 0;
+    const tenor = parseInt(document.getElementById('inputApprTenor').value) || 1;
+    const totalMargin = Math.round((rateBulan * tenor) * 100) / 100;
+    document.getElementById('inputApprMarginPersen').value = totalMargin;
+    calcApprovalSimulasi();
+  }
+
+  function onTotalMarginChange() {
+    const totalMargin = parseFloat(document.getElementById('inputApprMarginPersen').value) || 0;
+    const tenor = parseInt(document.getElementById('inputApprTenor').value) || 1;
+    if (tenor > 0) {
+      const rateBulan = Math.round((totalMargin / tenor) * 100) / 100;
+      document.getElementById('inputApprRateBulan').value = rateBulan;
+    }
+    calcApprovalSimulasi();
+  }
+
+  function calcApprovalSimulasi() {
+    const plafon = parseFloat(document.getElementById('inputApprPlafon').value) || 0;
+    const tenor = Math.max(1, parseInt(document.getElementById('inputApprTenor').value) || 1);
+    const totalMarginPersen = parseFloat(document.getElementById('inputApprMarginPersen').value) || 0;
+
+    const nominalMargin = Math.round((plafon * totalMarginPersen) / 100);
+    document.getElementById('inputApprMarginNominal').value = nominalMargin;
+    document.getElementById('txtApprMarginNominal').textContent = formatRupiah(nominalMargin);
+
+    const angsuranPokok = Math.round(plafon / tenor);
+    const angsuranMargin = Math.round(nominalMargin / tenor);
+    const totalAngsuran = angsuranPokok + angsuranMargin;
+
+    const provisi = Math.round(plafon * 0.01);
+    const drk = currentKategori.toUpperCase().includes('JAPAN') ? Math.round(plafon * 0.005) : 0;
+    const danaBersih = Math.max(0, plafon - provisi - drk);
+
+    document.getElementById('txtSimulasiTenorTag').textContent = tenor + ' Bulan';
+    document.getElementById('txtSimulasiPokokBulan').textContent = formatRupiah(angsuranPokok);
+    document.getElementById('txtSimulasiMarginBulan').textContent = formatRupiah(angsuranMargin);
+    document.getElementById('txtSimulasiTotalAngsuran').textContent = formatRupiah(totalAngsuran);
+    document.getElementById('txtSimulasiProvisi').textContent = formatRupiah(provisi);
+    document.getElementById('txtSimulasiDrk').textContent = formatRupiah(drk);
+    document.getElementById('txtSimulasiDanaBersih').textContent = formatRupiah(danaBersih);
+  }
+
+  function generateAutoCatatan() {
+    const plafon = parseFloat(document.getElementById('inputApprPlafon').value) || 0;
+    const tenor = parseInt(document.getElementById('inputApprTenor').value) || 1;
+    const rateBulan = parseFloat(document.getElementById('inputApprRateBulan').value) || 0;
+    const totalMarginPersen = parseFloat(document.getElementById('inputApprMarginPersen').value) || 0;
+    const nominalMargin = Math.round((plafon * totalMarginPersen) / 100);
+    const totalAngsuran = Math.round((plafon + nominalMargin) / tenor);
+
+    const autoText = `Disetujui Ketua Koperasi: Plafon ${formatRupiah(plafon)}, Tenor ${tenor} bulan, Suku Margin ${rateBulan}%/bln (Total ${totalMarginPersen}% = ${formatRupiah(nominalMargin)}). Potongan angsuran ${formatRupiah(totalAngsuran)}/bln.`;
+    document.getElementById('inputApprCatatan').value = autoText;
+  }
+
+  function openModalTolakPengajuan(btn) {
+    const id = btn.getAttribute('data-id');
+    const noPengajuan = btn.getAttribute('data-nopengajuan');
+    const nama = btn.getAttribute('data-nama');
+    const jenis = btn.getAttribute('data-jenis');
+    const nominal = btn.getAttribute('data-nominal');
+
+    document.getElementById('formTolakPengajuan').action = `/admin/pengajuan/${id}/proses`;
+    document.getElementById('txtTolakNoPengajuan').textContent = noPengajuan;
+    document.getElementById('txtTolakNama').textContent = 'Pemohon: ' + nama;
+    document.getElementById('txtTolakDetail').textContent = `${jenis} • ${nominal}`;
+
+    document.getElementById('modalTolakPengajuan').classList.remove('hidden');
+  }
+
+  function closeModalTolakPengajuan() {
+    document.getElementById('modalTolakPengajuan').classList.add('hidden');
+  }
+
+  function openModalApprovalSimpanan(btn) {
+    const id = btn.getAttribute('data-id');
+    const noPengajuan = btn.getAttribute('data-nopengajuan');
+    const nama = btn.getAttribute('data-nama');
+    const kategori = btn.getAttribute('data-kategori');
+    const nominal = parseFloat(btn.getAttribute('data-nominal') || 0);
+    const alasan = btn.getAttribute('data-alasan') || '-';
+
+    document.getElementById('formApprovalSimpanan').action = `/admin/pengajuan/${id}/proses`;
+    document.getElementById('txtSimpNoPengajuan').textContent = noPengajuan;
+    document.getElementById('txtSimpNama').textContent = nama;
+    document.getElementById('txtSimpKategori').textContent = 'Tabungan: Simpanan ' + kategori;
+    document.getElementById('txtSimpNominal').textContent = formatRupiah(nominal);
+    document.getElementById('txtSimpAlasan').textContent = 'Alasan: "' + alasan + '"';
+
+    document.getElementById('modalApprovalSimpanan').classList.remove('hidden');
+  }
+
+  function closeModalApprovalSimpanan() {
+    document.getElementById('modalApprovalSimpanan').classList.add('hidden');
+  }
 </script>
 {% endblock %}

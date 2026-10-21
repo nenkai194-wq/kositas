@@ -877,7 +877,7 @@ def superadmin_manajemen_role():
 @admin_required
 def admin_pengajuan_proses(id):
     action = request.form.get('action') # 'TERIMA' / 'TOLAK'
-    catatan = request.form.get('catatan_admin', '')
+    catatan = request.form.get('catatan_admin', '').strip()
     
     conn = database.get_db()
     cursor = conn.cursor()
@@ -892,28 +892,63 @@ def admin_pengajuan_proses(id):
     tgl_now = datetime.now().strftime('%Y-%m-%d')
 
     if action == 'TERIMA':
+        plafon_pokok = float(req['nominal'])
+        tenor_bulan = int(req.get('tenor_bulan') or 1)
+        margin_persen = 0.0
+        margin_nominal = 0.0
+
+        if req['jenis'] == 'PINJAMAN':
+            # Pertimbangan Ketua Koperasi: Plafon, Tenor, dan Margin yang mengikuti lama waktu cicilan
+            plafon_pokok = float(request.form.get('plafon_pokok') or req['nominal'])
+            tenor_bulan = int(request.form.get('tenor_bulan') or req['tenor_bulan'] or 1)
+            margin_per_bulan = float(request.form.get('margin_per_bulan') or 0.0)
+            margin_persen = float(request.form.get('margin_persen') or 0.0)
+            margin_nominal = float(request.form.get('margin_nominal') or 0.0)
+
+            # Jika margin_persen belum diisi atau 0, hitung otomatis dari margin_per_bulan * tenor_bulan
+            if margin_persen <= 0 and margin_per_bulan > 0:
+                margin_persen = round(margin_per_bulan * tenor_bulan, 2)
+
+            # Suku margin default bila input kosong
+            if margin_persen <= 0:
+                if req['kategori'] == 'Bon Putih':
+                    margin_persen = round(2.0 * tenor_bulan, 2)
+                elif req['kategori'] == 'JAPAN':
+                    margin_persen = round(1.0 * tenor_bulan, 2)
+                elif req['kategori'] == 'JAPEN':
+                    margin_persen = round(1.0 * tenor_bulan, 2)
+                else:
+                    margin_persen = 20.0
+
+            if margin_nominal <= 0:
+                margin_nominal = round((plafon_pokok * margin_persen) / 100.0, 2)
+
+        # Update status dan data final pengajuan online
         cursor.execute('''
         UPDATE pengajuan_online
-        SET status = 'Disetujui', catatan_admin = ?, tanggal_diproses = ?
+        SET status = 'Disetujui', catatan_admin = ?, tanggal_diproses = ?, nominal = ?, tenor_bulan = ?
         WHERE id = ?
-        ''', (catatan, tgl_now, id))
+        ''', (catatan, tgl_now, plafon_pokok, tenor_bulan, id))
         conn.commit()
         conn.close()
 
         # Eksekusi sesuai jenis
         if req['jenis'] == 'PINJAMAN':
-            # Buat pinjaman baru
-            margin_p = 25.0 if req['kategori'] == 'JAPAN' else (10.0 if req['kategori'] == 'JAPEN' else (2.0 if req['kategori'] == 'Bon Putih' else 20.0))
+            ket_lengkap = f"Persetujuan Ketua Koperasi #{req['no_pengajuan']}"
+            if catatan:
+                ket_lengkap += f": {catatan}"
+
             models.tambah_pinjaman({
                 'anggota_id': req['anggota_id'],
                 'jenis_pinjaman': req['kategori'],
-                'plafon_pokok': req['nominal'],
-                'tenor_bulan': req['tenor_bulan'],
-                'margin_persen': margin_p,
+                'plafon_pokok': plafon_pokok,
+                'tenor_bulan': tenor_bulan,
+                'margin_persen': margin_persen,
+                'margin_nominal': margin_nominal,
                 'keperluan': req['alasan'],
-                'keterangan': f"Hasil persetujuan pengajuan online #{req['no_pengajuan']}"
+                'keterangan': ket_lengkap
             })
-            flash(f"Pengajuan {req['no_pengajuan']} disetujui & pinjaman aktif berhasil dicairkan!", 'success')
+            flash(f"Pengajuan {req['no_pengajuan']} ({req['kategori']}) BERHASIL DISETUJUI Ketua Koperasi! Plafon: Rp {plafon_pokok:,.0f}, Tenor: {tenor_bulan} bln, Total Margin: {margin_persen:.1f}%. Pinjaman aktif diterbitkan.", 'success')
 
         elif req['jenis'] == 'PENARIKAN_SIMPANAN':
             if req['kategori'] == 'Pokok_Wajib':
@@ -963,10 +998,10 @@ def admin_pengajuan_proses(id):
         UPDATE pengajuan_online
         SET status = 'Ditolak', catatan_admin = ?, tanggal_diproses = ?
         WHERE id = ?
-        ''', (catatan or 'Tidak memenuhi persyaratan pengurus', tgl_now, id))
+        ''', (catatan or 'Tidak memenuhi persyaratan pertimbangan pengurus', tgl_now, id))
         conn.commit()
         conn.close()
-        flash(f"Pengajuan {req['no_pengajuan']} telah ditolak.", 'warning')
+        flash(f"Pengajuan {req['no_pengajuan']} telah DITOLAK.", 'warning')
 
     return redirect(url_for('admin_dashboard'))
 
