@@ -250,11 +250,29 @@ def init_db():
         ('pelunasan_tipe', "TEXT DEFAULT 'Normal'"),
         ('tanggal_lunas', 'DATE'),
         ('sisa_pokok_dilunasi', 'REAL DEFAULT 0.0'),
-        ('diskon_margin', 'REAL DEFAULT 0.0')
+        ('diskon_margin', 'REAL DEFAULT 0.0'),
+        ('pengajuan_id', 'INTEGER')
     ]
     for col_name, col_type in new_cols:
         if col_name not in cols:
             cursor.execute(f"ALTER TABLE pinjaman ADD COLUMN {col_name} {col_type}")
+
+    # Migration for pengajuan_online: ensure pinjaman_id exists
+    cursor.execute("PRAGMA table_info(pengajuan_online)")
+    p_cols = [r[1] for r in cursor.fetchall()]
+    if 'pinjaman_id' not in p_cols:
+        cursor.execute("ALTER TABLE pengajuan_online ADD COLUMN pinjaman_id INTEGER")
+
+    # Link existing approved online loan requests with loans
+    cursor.execute('''
+    UPDATE pengajuan_online 
+    SET pinjaman_id = (
+        SELECT id FROM pinjaman 
+        WHERE keterangan LIKE '%' || pengajuan_online.no_pengajuan || '%' 
+        ORDER BY id DESC LIMIT 1
+    )
+    WHERE pinjaman_id IS NULL AND jenis = 'PINJAMAN' AND status = 'Disetujui'
+    ''')
 
     conn.commit()
     conn.close()

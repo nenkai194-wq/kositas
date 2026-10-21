@@ -246,6 +246,21 @@ def admin_dashboard():
     ORDER BY p.tanggal_pengajuan ASC
     ''')
     pengajuan_pending = [dict(r) for r in cursor.fetchall()]
+
+    # Riwayat pengajuan online yang baru disetujui (terkoneksi dengan pinjaman bila jenis PINJAMAN)
+    cursor.execute('''
+    SELECT p.*, a.nama as nama_anggota, a.no_anggota, a.jabatan,
+           pj.id as pinjaman_id_real, pj.no_pinjaman, pj.saldo_pokok as pj_saldo_pokok,
+           pj.angsuran_ke as pj_angsuran_ke, pj.margin_persen as pj_margin_persen,
+           pj.margin_nominal as pj_margin_nominal, pj.total_angsuran_bulanan as pj_total_angsuran
+    FROM pengajuan_online p
+    JOIN anggota a ON p.anggota_id = a.id
+    LEFT JOIN pinjaman pj ON (p.pinjaman_id = pj.id OR pj.pengajuan_id = p.id OR pj.keterangan LIKE '%' || p.no_pengajuan || '%')
+    WHERE p.status = 'Disetujui'
+    ORDER BY p.tanggal_diproses DESC, p.id DESC
+    LIMIT 15
+    ''')
+    pengajuan_disetujui = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
     # Hitung ringkasan pembagian SHU estimasi
@@ -257,6 +272,7 @@ def admin_dashboard():
         recent_savings=recent_savings,
         active_loans=active_loans,
         pengajuan_pending=pengajuan_pending,
+        pengajuan_disetujui=pengajuan_disetujui,
         shu=shu
     )
 
@@ -938,7 +954,7 @@ def admin_pengajuan_proses(id):
             if catatan:
                 ket_lengkap += f": {catatan}"
 
-            models.tambah_pinjaman({
+            new_pinjaman_id = models.tambah_pinjaman({
                 'anggota_id': req['anggota_id'],
                 'jenis_pinjaman': req['kategori'],
                 'plafon_pokok': plafon_pokok,
@@ -946,8 +962,17 @@ def admin_pengajuan_proses(id):
                 'margin_persen': margin_persen,
                 'margin_nominal': margin_nominal,
                 'keperluan': req['alasan'],
-                'keterangan': ket_lengkap
+                'keterangan': ket_lengkap,
+                'pengajuan_id': id
             })
+
+            # Hubungkan pinjaman_id ke pengajuan_online
+            conn_link = database.get_db()
+            cur_link = conn_link.cursor()
+            cur_link.execute("UPDATE pengajuan_online SET pinjaman_id = ? WHERE id = ?", (new_pinjaman_id, id))
+            conn_link.commit()
+            conn_link.close()
+
             flash(f"Pengajuan {req['no_pengajuan']} ({req['kategori']}) BERHASIL DISETUJUI Ketua Koperasi! Plafon: Rp {plafon_pokok:,.0f}, Tenor: {tenor_bulan} bln, Total Margin: {margin_persen:.1f}%. Pinjaman aktif diterbitkan.", 'success')
 
         elif req['jenis'] == 'PENARIKAN_SIMPANAN':
@@ -1004,6 +1029,84 @@ def admin_pengajuan_proses(id):
         flash(f"Pengajuan {req['no_pengajuan']} telah DITOLAK.", 'warning')
 
     return redirect(url_for('admin_dashboard'))
+
+# --- KOREKSI & PEMBATALAN PERSETUJUAN PINJAMAN / MARGIN (HANYA SUPERADMIN) ---
+@app.route('/admin/pinjaman/<int:id>/koreksi', methods=['POST'])
+@superadmin_required
+def superadmin_pinjaman_koreksi(id):
+    """
+    Koreksi Suku Margin & Nilai Pinjaman bila ada salah hitung setelah disetujui.
+    HANYA DAPAT DIAKSES OLEH SUPERADMIN.
+    """
+    plafon_pokok = float(request.form.get('plafon_pokok', 0))
+    tenor_bulan = max(1, int(request.form.get('tenor_bulan', 1)))
+    margin_per_bulan = float(request.form.get('margin_per_bulan', 0.0))
+    margin_persen = float(request.form.get('margin_persen', 0.0))
+    margin_nominal = float(request.form.get('margin_nominal', 0.0))
+    alasan_koreksi = request.form.get('alasan_koreksi', '').strip()
+
+    if margin_persen <= 0 and margin_per_bulan > 0:
+        margin_persen = round(margin_per_bulan * tenor_bulan, 2)
+    if margin_nominal <= 0 and margin_persen > 0:
+        margin_nominal = round((plafon_pokok * margin_persen) / 100.0, 2)
+
+    data_koreksi = {
+        'plafon_pokok': plafon_pokok,
+        'tenor_bulan': tenor_bulan,
+        'margin_persen': margin_persen,
+        'margin_nominal': margin_nominal,
+        'alasan_koreksi': alasan_koreksi
+    }
+
+    user = get_current_user()
+    success, msg = models.koreksi_pinjaman_margin(id, data_koreksi, user_id=user['id'])
+    if success:
+        flash(msg, 'success')
+    else:
+        flash(msg, 'danger')
+
+    next_url = request.form.get('next_url') or url_for('admin_pinjaman_detail', id=id)
+    return redirect(next_url)
+
+@app.route('/admin/pinjaman/<int:id>/batalkan', methods=['POST'])
+@superadmin_required
+def superadmin_pinjaman_batalkan(id):
+    """
+    Batalkan Persetujuan Pinjaman yang salah terbentuk bila belum ada cicilan berjalan.
+    HANYA DAPAT DIAKSES OLEH SUPERADMIN.
+    """
+    alasan_batal = request.form.get('alasan_batal', '').strip()
+    kembalikan_ke_menunggu = request.form.get('kembalikan_ke_menunggu', '1') == '1'
+    user = get_current_user()
+
+    success, msg = models.batalkan_persetujuan_pinjaman(id, alasan_batal, kembalikan_ke_menunggu=kembalikan_ke_menunggu, user_id=user['id'])
+    if success:
+        flash(msg, 'success')
+    else:
+        flash(msg, 'danger')
+
+    next_url = request.form.get('next_url') or url_for('admin_dashboard')
+    return redirect(next_url)
+
+@app.route('/admin/pengajuan/<int:id>/batalkan', methods=['POST'])
+@superadmin_required
+def superadmin_pengajuan_batalkan(id):
+    """
+    Batalkan Pengajuan Online yang telah disetujui (PINJAMAN / PENARIKAN_SIMPANAN).
+    HANYA DAPAT DIAKSES OLEH SUPERADMIN.
+    """
+    alasan_batal = request.form.get('alasan_batal', '').strip()
+    kembalikan_ke_menunggu = request.form.get('kembalikan_ke_menunggu', '1') == '1'
+    user = get_current_user()
+
+    success, msg = models.batalkan_pengajuan_online(id, alasan_batal, kembalikan_ke_menunggu=kembalikan_ke_menunggu, user_id=user['id'])
+    if success:
+        flash(msg, 'success')
+    else:
+        flash(msg, 'danger')
+
+    next_url = request.form.get('next_url') or url_for('admin_dashboard')
+    return redirect(next_url)
 
 # ----------------- PORTAL ANGGOTA ROUTES -----------------
 @app.route('/anggota/dashboard')

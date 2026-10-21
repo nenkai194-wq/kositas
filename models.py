@@ -376,14 +376,16 @@ def tambah_pinjaman(data):
     tanggal_pengajuan = data.get('tanggal_pengajuan') or datetime.now().strftime('%Y-%m-%d')
     status = data.get('status', 'Aktif')
 
+    pengajuan_id = data.get('pengajuan_id')
+
     cursor.execute('''
     INSERT INTO pinjaman (
         no_pinjaman, anggota_id, jenis_pinjaman, tanggal_pengajuan, tanggal_cair,
         plafon_pokok, margin_persen, margin_nominal, total_pinjaman, tenor_bulan,
         angsuran_pokok_bulanan, angsuran_margin_bulanan, total_angsuran_bulanan,
         biaya_provisi, biaya_drk, saldo_pokok, saldo_margin, angsuran_ke,
-        status, keperluan, keterangan
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        status, keperluan, keterangan, pengajuan_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         no_pinjaman,
         anggota_id,
@@ -405,13 +407,222 @@ def tambah_pinjaman(data):
         0, # Angsuran ke awal
         status,
         data.get('keperluan', ''),
-        data.get('keterangan', '')
+        data.get('keterangan', ''),
+        pengajuan_id
     ))
 
     new_id = cursor.lastrowid
     conn.commit()
     conn.close()
     return new_id
+
+def get_pinjaman_by_id(pinjaman_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT p.*, a.nama as nama_anggota, a.no_anggota, a.nip, a.jabatan, a.no_hp
+    FROM pinjaman p
+    JOIN anggota a ON p.anggota_id = a.id
+    WHERE p.id = ?
+    ''', (pinjaman_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    r = dict(row)
+    if r['tenor_bulan'] > 0:
+        r['persen_lunas'] = round((r['angsuran_ke'] / r['tenor_bulan']) * 100, 1)
+    else:
+        r['persen_lunas'] = 100.0
+    return r
+
+def koreksi_pinjaman_margin(pinjaman_id, data_koreksi, user_id=None):
+    """
+    Fitur Khusus Superadmin: Mengoreksi plafon, tenor, rate margin, dan nominal margin
+    pada pinjaman yang telah disetujui apabila terjadi kesalahan hitung/input.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pinjaman WHERE id = ?", (pinjaman_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return False, "Data pinjaman tidak ditemukan!"
+
+    pj = dict(row)
+    angsuran_ke = pj['angsuran_ke']
+
+    plafon_pokok = float(data_koreksi.get('plafon_pokok', pj['plafon_pokok']))
+    tenor_bulan = max(1, int(data_koreksi.get('tenor_bulan', pj['tenor_bulan'])))
+    margin_persen = float(data_koreksi.get('margin_persen', pj['margin_persen']))
+    
+    if 'margin_nominal' in data_koreksi and float(data_koreksi.get('margin_nominal', 0)) > 0:
+        margin_nominal = float(data_koreksi['margin_nominal'])
+    else:
+        margin_nominal = round((plafon_pokok * margin_persen) / 100.0, 2)
+
+    total_pinjaman = plafon_pokok + margin_nominal
+    angsuran_pokok_bulanan = round(plafon_pokok / tenor_bulan, 2)
+    angsuran_margin_bulanan = round(margin_nominal / tenor_bulan, 2)
+    total_angsuran_bulanan = angsuran_pokok_bulanan + angsuran_margin_bulanan
+
+    biaya_provisi = round((plafon_pokok * 1.0) / 100.0, 2)
+    biaya_drk = round((plafon_pokok * 0.5) / 100.0, 2) if 'JAPAN' in pj['jenis_pinjaman'].upper() else 0.0
+
+    # Jika belum ada cicilan berjalan, saldo reset ke angka baru
+    if angsuran_ke == 0:
+        saldo_pokok = plafon_pokok
+        saldo_margin = margin_nominal
+    else:
+        # Jika cicilan sudah berjalan sebagian
+        pokok_terbayar = pj['plafon_pokok'] - pj['saldo_pokok']
+        margin_terbayar = pj['margin_nominal'] - pj['saldo_margin']
+        saldo_pokok = max(0.0, plafon_pokok - pokok_terbayar)
+        saldo_margin = max(0.0, margin_nominal - margin_terbayar)
+
+    alasan = data_koreksi.get('alasan_koreksi', 'Koreksi perhitungan margin oleh Superadmin').strip()
+    keterangan_baru = pj['keterangan'] or ''
+    if alasan:
+        keterangan_baru += f" | [Koreksi Margin Superadmin: {alasan}]"
+
+    cursor.execute('''
+    UPDATE pinjaman
+    SET plafon_pokok = ?, margin_persen = ?, margin_nominal = ?, total_pinjaman = ?,
+        tenor_bulan = ?, angsuran_pokok_bulanan = ?, angsuran_margin_bulanan = ?,
+        total_angsuran_bulanan = ?, biaya_provisi = ?, biaya_drk = ?,
+        saldo_pokok = ?, saldo_margin = ?, keterangan = ?
+    WHERE id = ?
+    ''', (
+        plafon_pokok, margin_persen, margin_nominal, total_pinjaman,
+        tenor_bulan, angsuran_pokok_bulanan, angsuran_margin_bulanan,
+        total_angsuran_bulanan, biaya_provisi, biaya_drk,
+        saldo_pokok, saldo_margin, keterangan_baru, pinjaman_id
+    ))
+
+    # Perbarui juga data pengajuan online terkait jika ada
+    ref_req_id = pj.get('pengajuan_id')
+    if ref_req_id:
+        cursor.execute('''
+        UPDATE pengajuan_online
+        SET nominal = ?, tenor_bulan = ?,
+            catatan_admin = catatan_admin || ?
+        WHERE id = ?
+        ''', (plafon_pokok, tenor_bulan, f" [Dikoreksi Superadmin: {alasan}]", ref_req_id))
+    else:
+        # Cari via no_pinjaman atau matching
+        cursor.execute('''
+        UPDATE pengajuan_online
+        SET nominal = ?, tenor_bulan = ?,
+            catatan_admin = catatan_admin || ?
+        WHERE pinjaman_id = ?
+        ''', (plafon_pokok, tenor_bulan, f" [Dikoreksi Superadmin: {alasan}]", pinjaman_id))
+
+    conn.commit()
+    conn.close()
+    return True, f"Pinjaman {pj['no_pinjaman']} berhasil dikoreksi Superadmin! Plafon: Rp {plafon_pokok:,.0f}, Tenor: {tenor_bulan} bln, Margin: {margin_persen:.1f}% (Rp {margin_nominal:,.0f}). Angsuran baru: Rp {total_angsuran_bulanan:,.0f}/bln."
+
+def batalkan_persetujuan_pinjaman(pinjaman_id, alasan_batal, kembalikan_ke_menunggu=True, user_id=None):
+    """
+    Fitur Khusus Superadmin: Membatalkan pinjaman yang salah disetujui.
+    Bila belum ada angsuran berjalan, data pinjaman dihapus dan status pengajuan online
+    dikembalikan ke 'Menunggu' agar bisa diverifikasi ulang dengan nilai margin yang benar.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pinjaman WHERE id = ?", (pinjaman_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return False, "Data pinjaman tidak ditemukan!"
+
+    pj = dict(row)
+    
+    # Validasi keamanan: cegah pembatalan instan jika cicilan sudah dibayar
+    cursor.execute("SELECT COUNT(*) FROM angsuran_pinjaman WHERE pinjaman_id = ?", (pinjaman_id,))
+    jml_angsuran = cursor.fetchone()[0]
+    if jml_angsuran > 0:
+        conn.close()
+        return False, f"Pinjaman {pj['no_pinjaman']} TIDAK DAPAT DIBATALKAN karena telah memiliki {jml_angsuran} riwayat transaksi pembayaran angsuran! Harap gunakan fitur koreksi margin atau pelunasan."
+
+    alasan = (alasan_batal or 'Kesalahan penetapan data kredit').strip()
+    status_pengajuan_baru = 'Menunggu' if kembalikan_ke_menunggu else 'Ditolak'
+
+    # Cari pengajuan online yang terkait
+    ref_req_id = pj.get('pengajuan_id')
+    if ref_req_id:
+        cursor.execute('''
+        UPDATE pengajuan_online
+        SET status = ?, pinjaman_id = NULL, tanggal_diproses = NULL,
+            catatan_admin = ?
+        WHERE id = ?
+        ''', (status_pengajuan_baru, f"[Approval Dibatalkan Superadmin: {alasan}]", ref_req_id))
+    else:
+        cursor.execute('''
+        UPDATE pengajuan_online
+        SET status = ?, pinjaman_id = NULL, tanggal_diproses = NULL,
+            catatan_admin = ?
+        WHERE pinjaman_id = ? OR (anggota_id = ? AND status = 'Disetujui' AND jenis = 'PINJAMAN' AND nominal = ?)
+        ''', (status_pengajuan_baru, f"[Approval Dibatalkan Superadmin: {alasan}]", pinjaman_id, pj['anggota_id'], pj['plafon_pokok']))
+
+    # Hapus pinjaman yang salah terbentuk
+    cursor.execute("DELETE FROM pinjaman WHERE id = ?", (pinjaman_id,))
+
+    conn.commit()
+    conn.close()
+    
+    pesan_tindakan = "Status pengajuan telah dikembalikan ke 'Menunggu Verifikasi' untuk diproses ulang." if kembalikan_ke_menunggu else "Status pengajuan ditandai sebagai 'Ditolak'."
+    return True, f"Persetujuan pinjaman {pj['no_pinjaman']} ({pj['jenis_pinjaman']}) berhasil DIBATALKAN oleh Superadmin! {pesan_tindakan}"
+
+def batalkan_pengajuan_online(pengajuan_id, alasan_batal, kembalikan_ke_menunggu=True, user_id=None):
+    """
+    Membatalkan pengajuan online yang sudah disetujui (PINJAMAN atau PENARIKAN_SIMPANAN) oleh Superadmin.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pengajuan_online WHERE id = ?", (pengajuan_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return False, "Pengajuan online tidak ditemukan!"
+
+    req = dict(row)
+    alasan = (alasan_batal or 'Dibatalkan oleh Superadmin').strip()
+
+    if req['jenis'] == 'PINJAMAN':
+        # Cari pinjaman terkait
+        pj_id = req.get('pinjaman_id')
+        if not pj_id:
+            cursor.execute("SELECT id FROM pinjaman WHERE pengajuan_id = ? OR keterangan LIKE ? LIMIT 1", (pengajuan_id, f"%{req['no_pengajuan']}%"))
+            pj_row = cursor.fetchone()
+            if pj_row:
+                pj_id = pj_row[0]
+
+        conn.close()
+        if pj_id:
+            return batalkan_persetujuan_pinjaman(pj_id, alasan, kembalikan_ke_menunggu, user_id)
+        else:
+            # Tidak ada pinjaman, cukup reset status pengajuan
+            conn2 = get_db()
+            cur2 = conn2.cursor()
+            status_baru = 'Menunggu' if kembalikan_ke_menunggu else 'Ditolak'
+            cur2.execute("UPDATE pengajuan_online SET status = ?, tanggal_diproses = NULL, catatan_admin = ? WHERE id = ?",
+                         (status_baru, f"[Approval Dibatalkan Superadmin: {alasan}]", pengajuan_id))
+            conn2.commit()
+            conn2.close()
+            return True, f"Pengajuan #{req['no_pengajuan']} berhasil dibatalkan oleh Superadmin."
+
+    elif req['jenis'] == 'PENARIKAN_SIMPANAN':
+        # Batalkan mutasi penarikan simpanan yang sudah terbit
+        cursor.execute("DELETE FROM transaksi_simpanan WHERE keterangan LIKE ?", (f"%{req['no_pengajuan']}%",))
+        status_baru = 'Menunggu' if kembalikan_ke_menunggu else 'Ditolak'
+        cursor.execute("UPDATE pengajuan_online SET status = ?, tanggal_diproses = NULL, catatan_admin = ? WHERE id = ?",
+                     (status_baru, f"[Pencairan Tabungan Dibatalkan Superadmin: {alasan}]", pengajuan_id))
+        conn.commit()
+        conn.close()
+        return True, f"Pencairan tabungan pengajuan #{req['no_pengajuan']} berhasil dibatalkan oleh Superadmin."
+
+    conn.close()
+    return False, "Jenis pengajuan tidak dikenal!"
 
 def bayar_angsuran(data):
     conn = get_db()

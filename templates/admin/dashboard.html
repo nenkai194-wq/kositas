@@ -189,93 +189,246 @@
     </div>
   </div>
 
-  <!-- PENDING PENGAJUAN ONLINE ANGGOTA -->
-  {% if pengajuan_pending %}
-  <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
-      <div class="flex items-center space-x-2">
-        <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center text-xs">
-          <i class="fa-solid fa-bell"></i>
+  <!-- TABEL PENGAJUAN ONLINE ANGGOTA (PENDING & RIWAYAT DISETUJUI) -->
+  {% if pengajuan_pending or pengajuan_disetujui %}
+  <div class="bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden mb-6">
+    <!-- Header Card dengan Navigation Tabs -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <span class="w-8 h-8 rounded-xl bg-white/10 text-amber-300 flex items-center justify-center text-sm border border-white/10 shadow-inner">
+          <i class="fa-solid fa-file-signature"></i>
         </span>
-        <h3 class="text-sm font-bold text-amber-900">Pengajuan Anggota Menunggu Verifikasi ({{ pengajuan_pending|length }})</h3>
+        <div>
+          <h3 class="text-sm font-bold">Pengajuan Mandiri Anggota Online</h3>
+          <p class="text-[11px] text-slate-300">Verifikasi, Penetapan Nilai Margin, & Kontrol Koreksi Superadmin</p>
+        </div>
       </div>
-      <span class="text-xs font-semibold text-amber-700">Perlu Tindakan Pengurus</span>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center bg-white/10 p-1 rounded-xl text-xs font-bold border border-white/10 self-start sm:self-auto">
+        <button type="button" id="tabBtnPending" onclick="switchPengajuanTab('pending')"
+                class="px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-sm">
+          <i class="fa-solid fa-clock"></i>
+          <span>Menunggu Verifikasi</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-mono">{{ pengajuan_pending|length }}</span>
+        </button>
+        <button type="button" id="tabBtnDisetujui" onclick="switchPengajuanTab('disetujui')"
+                class="px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Riwayat Disetujui</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-mono">{{ pengajuan_disetujui|length }}</span>
+        </button>
+      </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-xs text-left">
-        <thead class="text-amber-800 uppercase text-[10px] border-b border-amber-200 font-bold">
-          <tr>
-            <th class="py-2">No Pengajuan</th>
-            <th class="py-2">Nama Anggota</th>
-            <th class="py-2">Jenis / Kategori</th>
-            <th class="py-2 text-right">Nominal</th>
-            <th class="py-2">Keperluan / Alasan</th>
-            <th class="py-2 text-center">Aksi</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-amber-200/60">
-          {% for req in pengajuan_pending %}
-          <tr class="hover:bg-amber-100/40">
-            <td class="py-2.5 font-mono font-bold text-slate-800">{{ req.no_pengajuan }}</td>
-            <td class="py-2.5 font-bold text-slate-800">{{ req.nama_anggota }} ({{ req.no_anggota }})</td>
-            <td class="py-2.5">
-              <span class="px-2 py-0.5 rounded font-semibold bg-white border border-amber-300 text-amber-900">
-                {{ req.jenis }}: {{ req.kategori }} {% if req.tenor_bulan > 1 %}({{ req.tenor_bulan }} bln){% endif %}
-              </span>
-            </td>
-            <td class="py-2.5 text-right font-bold text-slate-900">{{ req.nominal|rupiah }}</td>
-            <td class="py-2.5 text-slate-600 max-w-xs truncate">{{ req.alasan }}</td>
-            <td class="py-2.5 text-center">
-              <div class="inline-flex items-center gap-1.5">
-                {% if req.jenis == 'PINJAMAN' %}
-                <button type="button" 
-                        onclick="openModalApprovalPinjaman(this)"
-                        data-id="{{ req.id }}"
-                        data-nopengajuan="{{ req.no_pengajuan }}"
-                        data-nama="{{ req.nama_anggota }}"
-                        data-noanggota="{{ req.no_anggota }}"
-                        data-kategori="{{ req.kategori }}"
-                        data-nominal="{{ req.nominal }}"
-                        data-tenor="{{ req.tenor_bulan }}"
-                        data-alasan="{{ req.alasan|e }}"
-                        data-tanggal="{{ req.tanggal_pengajuan }}"
-                        class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
-                        title="Verifikasi & Tentukan Margin Pinjaman oleh Ketua Koperasi">
-                  <i class="fa-solid fa-stamp text-[10px] text-amber-300"></i> Setujui & Margin
-                </button>
-                {% else %}
-                <button type="button" 
-                        onclick="openModalApprovalSimpanan(this)"
-                        data-id="{{ req.id }}"
-                        data-nopengajuan="{{ req.no_pengajuan }}"
-                        data-nama="{{ req.nama_anggota }}"
-                        data-kategori="{{ req.kategori }}"
-                        data-nominal="{{ req.nominal }}"
-                        data-alasan="{{ req.alasan|e }}"
-                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
-                        title="Sahkan & Cairkan Tabungan">
-                  <i class="fa-solid fa-check text-[10px]"></i> Cairkan
-                </button>
-                {% endif %}
+    <!-- TAB 1: PENDING PENGAJUAN -->
+    <div id="tabContentPending" class="p-4 bg-amber-50/40">
+      {% if pengajuan_pending %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="text-amber-800 uppercase text-[10px] border-b border-amber-200 font-bold">
+            <tr>
+              <th class="py-2">No Pengajuan</th>
+              <th class="py-2">Nama Anggota</th>
+              <th class="py-2">Jenis / Kategori</th>
+              <th class="py-2 text-right">Nominal</th>
+              <th class="py-2">Keperluan / Alasan</th>
+              <th class="py-2 text-center">Aksi Verifikasi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-amber-200/60">
+            {% for req in pengajuan_pending %}
+            <tr class="hover:bg-amber-100/40">
+              <td class="py-2.5 font-mono font-bold text-slate-800">{{ req.no_pengajuan }}</td>
+              <td class="py-2.5 font-bold text-slate-800">{{ req.nama_anggota }} ({{ req.no_anggota }})</td>
+              <td class="py-2.5">
+                <span class="px-2 py-0.5 rounded font-semibold bg-white border border-amber-300 text-amber-900">
+                  {{ req.jenis }}: {{ req.kategori }} {% if req.tenor_bulan > 1 %}({{ req.tenor_bulan }} bln){% endif %}
+                </span>
+              </td>
+              <td class="py-2.5 text-right font-bold text-slate-900">{{ req.nominal|rupiah }}</td>
+              <td class="py-2.5 text-slate-600 max-w-xs truncate">{{ req.alasan }}</td>
+              <td class="py-2.5 text-center">
+                <div class="inline-flex items-center gap-1.5">
+                  {% if req.jenis == 'PINJAMAN' %}
+                  <button type="button" 
+                          onclick="openModalApprovalPinjaman(this)"
+                          data-id="{{ req.id }}"
+                          data-nopengajuan="{{ req.no_pengajuan }}"
+                          data-nama="{{ req.nama_anggota }}"
+                          data-noanggota="{{ req.no_anggota }}"
+                          data-kategori="{{ req.kategori }}"
+                          data-nominal="{{ req.nominal }}"
+                          data-tenor="{{ req.tenor_bulan }}"
+                          data-alasan="{{ req.alasan|e }}"
+                          data-tanggal="{{ req.tanggal_pengajuan }}"
+                          class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                          title="Verifikasi & Tentukan Margin Pinjaman oleh Ketua Koperasi">
+                    <i class="fa-solid fa-stamp text-[10px] text-amber-300"></i> Setujui & Margin
+                  </button>
+                  {% else %}
+                  <button type="button" 
+                          onclick="openModalApprovalSimpanan(this)"
+                          data-id="{{ req.id }}"
+                          data-nopengajuan="{{ req.no_pengajuan }}"
+                          data-nama="{{ req.nama_anggota }}"
+                          data-kategori="{{ req.kategori }}"
+                          data-nominal="{{ req.nominal }}"
+                          data-alasan="{{ req.alasan|e }}"
+                          class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                          title="Sahkan & Cairkan Tabungan">
+                    <i class="fa-solid fa-check text-[10px]"></i> Cairkan
+                  </button>
+                  {% endif %}
 
-                <button type="button" 
-                        onclick="openModalTolakPengajuan(this)"
-                        data-id="{{ req.id }}"
-                        data-nopengajuan="{{ req.no_pengajuan }}"
-                        data-nama="{{ req.nama_anggota }}"
-                        data-jenis="{{ req.jenis }}: {{ req.kategori }}"
-                        data-nominal="{{ req.nominal|rupiah }}"
-                        class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
-                        title="Tolak Pengajuan">
-                  <i class="fa-solid fa-xmark text-[10px]"></i> Tolak
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                  <button type="button" 
+                          onclick="openModalTolakPengajuan(this)"
+                          data-id="{{ req.id }}"
+                          data-nopengajuan="{{ req.no_pengajuan }}"
+                          data-nama="{{ req.nama_anggota }}"
+                          data-jenis="{{ req.jenis }}: {{ req.kategori }}"
+                          data-nominal="{{ req.nominal|rupiah }}"
+                          class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                          title="Tolak Pengajuan">
+                    <i class="fa-solid fa-xmark text-[10px]"></i> Tolak
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-6 text-center text-slate-400 text-xs">
+        <i class="fa-solid fa-check-circle text-emerald-500 text-lg mb-1 block"></i>
+        Tidak ada pengajuan anggota yang menunggu verifikasi saat ini.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- TAB 2: RIWAYAT DISETUJUI (KOREKSI MARGIN & BATAL SUPERADMIN) -->
+    <div id="tabContentDisetujui" class="hidden p-4 bg-slate-50/60">
+      {% if pengajuan_disetujui %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="text-slate-500 uppercase text-[10px] border-b border-slate-200 font-bold bg-slate-100/70">
+            <tr>
+              <th class="py-2.5 px-3">No Pengajuan</th>
+              <th class="py-2.5 px-3">Nama Anggota</th>
+              <th class="py-2.5 px-3">Jenis & Plafon</th>
+              <th class="py-2.5 px-3">Tenor & Margin</th>
+              <th class="py-2.5 px-3 text-right">Potongan/Bulan</th>
+              <th class="py-2.5 px-3">Catatan Persetujuan</th>
+              <th class="py-2.5 px-3 text-center">Aksi Superadmin</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200/80 bg-white">
+            {% for req in pengajuan_disetujui %}
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-2.5 px-3 font-mono font-bold text-slate-800">
+                <span class="block">{{ req.no_pengajuan }}</span>
+                {% if req.no_pinjaman %}
+                <span class="text-[10px] text-indigo-600 font-normal">Kontrak: {{ req.no_pinjaman }}</span>
+                {% endif %}
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="font-bold text-slate-800 block">{{ req.nama_anggota }}</span>
+                <span class="text-[10px] text-slate-400">{{ req.no_anggota }}</span>
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold 
+                  {% if req.kategori == 'JAPAN' %}bg-purple-100 text-purple-800
+                  {% elif req.kategori == 'JAPEN' %}bg-blue-100 text-blue-800
+                  {% elif req.kategori == 'Bon Putih' %}bg-amber-100 text-amber-800
+                  {% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                  {{ req.jenis }}: {{ req.kategori }}
+                </span>
+                <div class="font-mono font-bold text-slate-900 mt-0.5">{{ req.nominal|rupiah }}</div>
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="font-semibold text-slate-700">Tenor: {{ req.tenor_bulan }} bln</span>
+                {% if req.pj_margin_persen is not none %}
+                <div class="text-[11px] text-slate-500">Margin: {{ req.pj_margin_persen }}% ({{ req.pj_margin_nominal|rupiah }})</div>
+                {% else %}
+                <div class="text-[10px] text-slate-400">-</div>
+                {% endif %}
+              </td>
+              <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+                {% if req.pj_total_angsuran %}
+                {{ req.pj_total_angsuran|rupiah }}
+                {% else %}
+                -
+                {% endif %}
+              </td>
+              <td class="py-2.5 px-3 text-slate-600 max-w-xs text-[11px] truncate">
+                {{ req.catatan_admin or '-' }}
+              </td>
+              <td class="py-2.5 px-3 text-center">
+                {% if current_user.role == 'superadmin' %}
+                  {% if req.jenis == 'PINJAMAN' and req.pinjaman_id_real %}
+                  <div class="inline-flex items-center gap-1.5">
+                    <button type="button" 
+                            onclick="openModalKoreksiSuperadmin(this)"
+                            data-pinjamanid="{{ req.pinjaman_id_real }}"
+                            data-pengajuanid="{{ req.id }}"
+                            data-nopengajuan="{{ req.no_pengajuan }}"
+                            data-nopinjaman="{{ req.no_pinjaman or '-' }}"
+                            data-nama="{{ req.nama_anggota }}"
+                            data-noanggota="{{ req.no_anggota }}"
+                            data-kategori="{{ req.kategori }}"
+                            data-nominal="{{ req.nominal }}"
+                            data-tenor="{{ req.tenor_bulan }}"
+                            data-marginpersen="{{ req.pj_margin_persen or 0 }}"
+                            data-marginnominal="{{ req.pj_margin_nominal or 0 }}"
+                            data-angsuranke="{{ req.pj_angsuran_ke or 0 }}"
+                            class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                            title="Koreksi Nilai Margin & Angsuran (Khusus Superadmin)">
+                      <i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit
+                    </button>
+                    <button type="button" 
+                            onclick="openModalBatalkanSuperadmin(this)"
+                            data-pinjamanid="{{ req.pinjaman_id_real }}"
+                            data-pengajuanid="{{ req.id }}"
+                            data-nopengajuan="{{ req.no_pengajuan }}"
+                            data-nopinjaman="{{ req.no_pinjaman or '-' }}"
+                            data-nama="{{ req.nama_anggota }}"
+                            data-angsuranke="{{ req.pj_angsuran_ke or 0 }}"
+                            class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                            title="Batalkan Persetujuan Pinjaman (Khusus Superadmin)">
+                      <i class="fa-solid fa-undo text-[10px]"></i> Batal
+                    </button>
+                  </div>
+                  {% elif req.jenis == 'PENARIKAN_SIMPANAN' %}
+                  <button type="button" 
+                          onclick="openModalBatalkanSuperadmin(this)"
+                          data-pengajuanid="{{ req.id }}"
+                          data-nopengajuan="{{ req.no_pengajuan }}"
+                          data-nama="{{ req.nama_anggota }}"
+                          data-jenis="PENARIKAN"
+                          class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
+                          title="Batalkan Pencairan Tabungan">
+                    <i class="fa-solid fa-undo text-[10px]"></i> Batal
+                  </button>
+                  {% else %}
+                  <span class="text-slate-400 text-[10px] italic">Telah disahkan</span>
+                  {% endif %}
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-400 font-medium inline-flex items-center gap-1">
+                  <i class="fa-solid fa-lock text-[9px]"></i> Superadmin
+                </span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-6 text-center text-slate-400 text-xs">
+        Belum ada riwayat pengajuan online yang disetujui.
+      </div>
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -657,6 +810,256 @@
   </div>
 </div>
 
+<!-- ======================================================== -->
+<!-- MODAL KOREKSI NILAI MARGIN & PINJAMAN (KHUSUS SUPERADMIN)-->
+<!-- ======================================================== -->
+<div id="modalKoreksiSuperadmin" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden transform transition-all my-8">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-amber-600 to-amber-800 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white text-lg border border-white/10">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-bold">Koreksi Margin & Kontrak Pinjaman</h3>
+            <span class="px-2 py-0.5 rounded bg-black/20 text-white text-[10px] font-extrabold uppercase tracking-wider">Superadmin Only</span>
+          </div>
+          <p class="text-xs text-amber-100">Perbaiki kesalahan input plafon, suku margin, atau lama cicilan yang telah disetujui</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModalKoreksiSuperadmin()" class="text-amber-200 hover:text-white text-lg p-1.5 transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form id="formKoreksiSuperadmin" method="POST" action="" class="p-6 space-y-4">
+      <input type="hidden" name="next_url" value="{{ url_for('admin_dashboard') }}">
+      
+      <!-- Info Ringkas Pinjaman -->
+      <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <div>
+          <span class="text-slate-400 block text-[10px]">No Pengajuan / Pinjaman</span>
+          <span id="txtKoreksiNo" class="font-bold font-mono text-slate-800">REQ-...</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px]">Nama Anggota</span>
+          <span id="txtKoreksiNama" class="font-bold text-slate-900">-</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px]">Kategori & Angsuran Ke</span>
+          <span id="txtKoreksiKategori" class="font-semibold text-amber-900">-</span>
+        </div>
+      </div>
+
+      <!-- Warning Alert -->
+      <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2">
+        <i class="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>
+        <div>
+          <strong>Ketentuan Koreksi Superadmin:</strong> Seluruh nilai angsuran bulanan pokok, angsuran margin, biaya provisi, dan saldo pinjaman akan dihitung ulang secara otomatis berdasarkan parameter baru di bawah.
+        </div>
+      </div>
+
+      <!-- Inputs Plafon & Tenor -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">
+            Plafon Pokok Baru (Rp) <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-bold">Rp</span>
+            <input type="number" name="plafon_pokok" id="inputKoreksiPlafon" min="100000" step="50000" required oninput="calcKoreksiSimulasi()"
+                   class="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold font-mono text-slate-900 focus:ring-2 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">
+            Tenor Baru (Bulan) <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input type="number" name="tenor_bulan" id="inputKoreksiTenor" min="1" max="60" required oninput="onKoreksiTenorChange()"
+                   class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500">
+            <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 text-xs font-bold">Bulan</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Margin Penetapan Baru -->
+      <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-percent text-amber-600"></i> Koreksi Suku Margin
+          </span>
+          <span class="text-[11px] text-slate-500 italic">Margin mengikuti lama waktu cicilan</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Rate Margin / Bulan (%)</label>
+            <div class="relative">
+              <input type="number" step="0.05" name="margin_per_bulan" id="inputKoreksiRateBulan" value="1.0" required oninput="onKoreksiRateBulanChange()"
+                     class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-amber-500">
+              <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs font-bold">%/bln</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Margin (%)</label>
+            <div class="relative">
+              <input type="number" step="0.1" name="margin_persen" id="inputKoreksiMarginPersen" value="10.0" required oninput="onKoreksiTotalMarginChange()"
+                     class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-amber-500">
+              <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs font-bold">%</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Nominal Margin</label>
+            <input type="hidden" name="margin_nominal" id="inputKoreksiMarginNominal">
+            <div id="txtKoreksiMarginNominal" class="w-full px-3 py-1.5 bg-amber-100/70 border border-amber-300 rounded-lg text-xs font-bold font-mono text-amber-900 flex items-center">
+              Rp 0
+            </div>
+          </div>
+        </div>
+
+        <!-- Preset buttons -->
+        <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+          <span class="text-slate-500 text-[10px] font-medium mr-1">Preset:</span>
+          <button type="button" onclick="setPresetKoreksiRate(0.8)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">0.8% / bln</button>
+          <button type="button" onclick="setPresetKoreksiRate(1.0)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">1.0% / bln</button>
+          <button type="button" onclick="setPresetKoreksiRate(1.25)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">1.25% / bln</button>
+          <button type="button" onclick="setPresetKoreksiRate(1.5)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">1.5% / bln</button>
+          <button type="button" onclick="setPresetKoreksiRate(2.0)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">2.0% / bln</button>
+        </div>
+      </div>
+
+      <!-- Live Calculation Card Hasil Koreksi -->
+      <div class="bg-gradient-to-br from-slate-900 to-amber-950 text-white p-4 rounded-xl shadow-inner space-y-2">
+        <div class="flex items-center justify-between border-b border-amber-800/60 pb-2">
+          <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-calculator"></i> Hasil Perhitungan Setelah Koreksi
+          </span>
+          <span id="txtKoreksiTenorTag" class="text-[10px] bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded font-mono font-bold">10 Bulan</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[10px]">Pokok Baru/Bln</span>
+            <span id="txtKoreksiPokokBulan" class="font-bold font-mono text-slate-200">Rp 0</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">Margin Baru/Bln</span>
+            <span id="txtKoreksiMarginBulan" class="font-bold font-mono text-amber-400">Rp 0</span>
+          </div>
+          <div class="sm:col-span-2 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 text-right">
+            <span class="text-amber-300 block text-[10px] uppercase font-bold">Total Cicilan Baru / Bulan</span>
+            <span id="txtKoreksiTotalAngsuran" class="text-base font-extrabold font-mono text-amber-300">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alasan Koreksi (Wajib) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">
+          Alasan Koreksi / Catatan Superadmin <span class="text-red-500">*</span>
+        </label>
+        <textarea name="alasan_koreksi" id="inputKoreksiAlasan" required rows="2" placeholder="Contoh: Koreksi perhitungan margin RAT, disepakati rate 1.0%/bulan selama 10 bulan..."
+                  class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500"></textarea>
+      </div>
+
+      <!-- Tombol Aksi -->
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalKoreksiSuperadmin()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </button>
+        <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check"></i> Simpan Koreksi Pinjaman
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL BATALKAN PERSETUJUAN PINJAMAN (KHUSUS SUPERADMIN)  -->
+<!-- ======================================================== -->
+<div id="modalBatalkanSuperadmin" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-8">
+    <div class="bg-rose-600 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-sm font-bold">Batalkan Persetujuan</h3>
+            <span class="px-1.5 py-0.2 rounded bg-black/20 text-white text-[9px] font-extrabold uppercase">Superadmin</span>
+          </div>
+          <p class="text-[11px] text-rose-200">Rollback pinjaman / pengajuan yang salah disetujui</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModalBatalkanSuperadmin()" class="text-rose-200 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form id="formBatalkanSuperadmin" method="POST" action="" class="p-6 space-y-4">
+      <input type="hidden" name="next_url" value="{{ url_for('admin_dashboard') }}">
+
+      <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 space-y-1">
+        <span class="text-rose-600 text-[10px] font-bold block uppercase tracking-wider">Data Yang Dibatalkan:</span>
+        <div class="font-bold text-sm text-slate-900" id="txtBatalNo">REQ-...</div>
+        <div class="text-slate-800 font-semibold" id="txtBatalNama">Anggota</div>
+        <div class="text-slate-600 text-[11px]" id="txtBatalDetail">Kontrak Pinjaman</div>
+      </div>
+
+      <!-- Warning Angsuran Berjalan -->
+      <div id="boxWarningBatalCicilan" class="hidden p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900">
+        <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i>
+        <strong>Perhatian:</strong> Pinjaman ini sudah memiliki cicilan berjalan dan tidak dapat dihapus instan. Silakan gunakan fitur <strong>Koreksi Margin</strong> atau Pelunasan.
+      </div>
+
+      <!-- Opsi Kembalikan ke Menunggu -->
+      <div id="boxOpsiBatal" class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+        <span class="block font-bold text-slate-700">Tindakan Status Pengajuan:</span>
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="radio" name="kembalikan_ke_menunggu" value="1" checked class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+          <div>
+            <span class="font-bold text-slate-800 block">Kembalikan ke "Menunggu Verifikasi" (Rekomendasi)</span>
+            <span class="text-[11px] text-slate-500">Pinjaman yang salah dihapus, pengajuan bisa diverifikasi & disetujui ulang dengan margin yang benar.</span>
+          </div>
+        </label>
+        <label class="flex items-start gap-2 cursor-pointer pt-2 border-t border-slate-200">
+          <input type="radio" name="kembalikan_ke_menunggu" value="0" class="mt-0.5 text-rose-600 focus:ring-rose-500">
+          <div>
+            <span class="font-bold text-slate-800 block">Batalkan Permanen (Tandai "Ditolak")</span>
+            <span class="text-[11px] text-slate-500">Pinjaman dihapus dan pengajuan ditolak sepenuhnya.</span>
+          </div>
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">
+          Alasan Pembatalan <span class="text-red-500">*</span>
+        </label>
+        <textarea name="alasan_batal" required rows="2" placeholder="Tuliskan alasan pembatalan persetujuan (contoh: Salah input plafon dan suku margin, dibatalkan untuk diajukan ulang)..."
+                  class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-rose-500"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalBatalkanSuperadmin()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Tutup
+        </button>
+        <button type="submit" id="btnSubmitBatal" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-600/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-undo"></i> Eksekusi Pembatalan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -899,6 +1302,158 @@
 
   function closeModalApprovalSimpanan() {
     document.getElementById('modalApprovalSimpanan').classList.add('hidden');
+  }
+
+  // --- TABS PENGAJUAN ONLINE ---
+  function switchPengajuanTab(tab) {
+    const btnPending = document.getElementById('tabBtnPending');
+    const btnDisetujui = document.getElementById('tabBtnDisetujui');
+    const contentPending = document.getElementById('tabContentPending');
+    const contentDisetujui = document.getElementById('tabContentDisetujui');
+
+    if (!btnPending || !btnDisetujui || !contentPending || !contentDisetujui) return;
+
+    if (tab === 'pending') {
+      btnPending.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-sm';
+      btnDisetujui.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+      contentPending.classList.remove('hidden');
+      contentDisetujui.classList.add('hidden');
+    } else {
+      btnDisetujui.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm';
+      btnPending.className = 'px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+      contentDisetujui.classList.remove('hidden');
+      contentPending.classList.add('hidden');
+    }
+  }
+
+  // --- KOREKSI SUPERADMIN MODAL ---
+  let currentKoreksiKategori = '';
+
+  function openModalKoreksiSuperadmin(btn) {
+    const pinjamanId = btn.getAttribute('data-pinjamanid');
+    const noPengajuan = btn.getAttribute('data-nopengajuan');
+    const noPinjaman = btn.getAttribute('data-nopinjaman');
+    const nama = btn.getAttribute('data-nama');
+    const noAnggota = btn.getAttribute('data-noanggota');
+    const kategori = btn.getAttribute('data-kategori');
+    const nominal = parseFloat(btn.getAttribute('data-nominal') || 0);
+    const tenor = parseInt(btn.getAttribute('data-tenor') || 1);
+    const marginPersen = parseFloat(btn.getAttribute('data-marginpersen') || 0);
+    const angsuranKe = parseInt(btn.getAttribute('data-angsuranke') || 0);
+
+    currentKoreksiKategori = kategori;
+
+    document.getElementById('formKoreksiSuperadmin').action = `/admin/pinjaman/${pinjamanId}/koreksi`;
+    document.getElementById('txtKoreksiNo').textContent = `${noPengajuan} (${noPinjaman})`;
+    document.getElementById('txtKoreksiNama').textContent = `${nama} (${noAnggota})`;
+    document.getElementById('txtKoreksiKategori').textContent = `${kategori} • Angsuran ke-${angsuranKe}`;
+
+    document.getElementById('inputKoreksiPlafon').value = nominal;
+    document.getElementById('inputKoreksiTenor').value = tenor;
+
+    let rateBulan = 1.0;
+    if (tenor > 0 && marginPersen > 0) {
+      rateBulan = Math.round((marginPersen / tenor) * 100) / 100;
+    }
+    document.getElementById('inputKoreksiRateBulan').value = rateBulan;
+    document.getElementById('inputKoreksiMarginPersen').value = marginPersen;
+    document.getElementById('inputKoreksiAlasan').value = '';
+
+    calcKoreksiSimulasi();
+    document.getElementById('modalKoreksiSuperadmin').classList.remove('hidden');
+  }
+
+  function closeModalKoreksiSuperadmin() {
+    document.getElementById('modalKoreksiSuperadmin').classList.add('hidden');
+  }
+
+  function onKoreksiTenorChange() {
+    onKoreksiRateBulanChange();
+  }
+
+  function setPresetKoreksiRate(rate) {
+    document.getElementById('inputKoreksiRateBulan').value = rate;
+    onKoreksiRateBulanChange();
+  }
+
+  function onKoreksiRateBulanChange() {
+    const rate = parseFloat(document.getElementById('inputKoreksiRateBulan').value) || 0;
+    const tenor = parseInt(document.getElementById('inputKoreksiTenor').value) || 1;
+    const totalMargin = Math.round((rate * tenor) * 100) / 100;
+    document.getElementById('inputKoreksiMarginPersen').value = totalMargin;
+    calcKoreksiSimulasi();
+  }
+
+  function onKoreksiTotalMarginChange() {
+    const totalMargin = parseFloat(document.getElementById('inputKoreksiMarginPersen').value) || 0;
+    const tenor = parseInt(document.getElementById('inputKoreksiTenor').value) || 1;
+    if (tenor > 0) {
+      const rate = Math.round((totalMargin / tenor) * 100) / 100;
+      document.getElementById('inputKoreksiRateBulan').value = rate;
+    }
+    calcKoreksiSimulasi();
+  }
+
+  function calcKoreksiSimulasi() {
+    const plafon = parseFloat(document.getElementById('inputKoreksiPlafon').value) || 0;
+    const tenor = Math.max(1, parseInt(document.getElementById('inputKoreksiTenor').value) || 1);
+    const totalMarginPersen = parseFloat(document.getElementById('inputKoreksiMarginPersen').value) || 0;
+
+    const nominalMargin = Math.round((plafon * totalMarginPersen) / 100);
+    document.getElementById('inputKoreksiMarginNominal').value = nominalMargin;
+    document.getElementById('txtKoreksiMarginNominal').textContent = formatRupiah(nominalMargin);
+
+    const angsuranPokok = Math.round(plafon / tenor);
+    const angsuranMargin = Math.round(nominalMargin / tenor);
+    const totalAngsuran = angsuranPokok + angsuranMargin;
+
+    document.getElementById('txtKoreksiTenorTag').textContent = tenor + ' Bulan';
+    document.getElementById('txtKoreksiPokokBulan').textContent = formatRupiah(angsuranPokok);
+    document.getElementById('txtKoreksiMarginBulan').textContent = formatRupiah(angsuranMargin);
+    document.getElementById('txtKoreksiTotalAngsuran').textContent = formatRupiah(totalAngsuran);
+  }
+
+  // --- BATALKAN PERSUTUJUAN SUPERADMIN MODAL ---
+  function openModalBatalkanSuperadmin(btn) {
+    const pinjamanId = btn.getAttribute('data-pinjamanid');
+    const pengajuanId = btn.getAttribute('data-pengajuanid');
+    const noPengajuan = btn.getAttribute('data-nopengajuan');
+    const noPinjaman = btn.getAttribute('data-nopinjaman') || '-';
+    const nama = btn.getAttribute('data-nama');
+    const angsuranKe = parseInt(btn.getAttribute('data-angsuranke') || 0);
+
+    const form = document.getElementById('formBatalkanSuperadmin');
+    if (pinjamanId) {
+      form.action = `/admin/pinjaman/${pinjamanId}/batalkan`;
+    } else {
+      form.action = `/admin/pengajuan/${pengajuanId}/batalkan`;
+    }
+
+    document.getElementById('txtBatalNo').textContent = `${noPengajuan} ${noPinjaman !== '-' ? '('+noPinjaman+')' : ''}`;
+    document.getElementById('txtBatalNama').textContent = 'Peminjam: ' + nama;
+    document.getElementById('txtBatalDetail').textContent = `Riwayat Cicilan Berjalan: ${angsuranKe} kali`;
+
+    const boxWarning = document.getElementById('boxWarningBatalCicilan');
+    const boxOpsi = document.getElementById('boxOpsiBatal');
+    const btnSubmit = document.getElementById('btnSubmitBatal');
+
+    if (angsuranKe > 0) {
+      boxWarning.classList.remove('hidden');
+      boxOpsi.classList.add('hidden');
+      btnSubmit.setAttribute('disabled', 'disabled');
+      btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      boxWarning.classList.add('hidden');
+      boxOpsi.classList.remove('hidden');
+      btnSubmit.removeAttribute('disabled');
+      btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    document.getElementById('modalBatalkanSuperadmin').classList.remove('hidden');
+  }
+
+  function closeModalBatalkanSuperadmin() {
+    document.getElementById('modalBatalkanSuperadmin').classList.add('hidden');
   }
 </script>
 {% endblock %}

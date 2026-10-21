@@ -37,6 +37,19 @@
       <a href="{{ url_for('admin_pinjaman_topup', id=loan.id) }}" class="px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-700/20 transition flex items-center gap-1.5">
         <i class="fa-solid fa-arrows-rotate"></i> Top Up Pinjaman
       </a>
+
+      {% if current_user.role == 'superadmin' %}
+      <!-- TOMBOL KOREKSI & BATAL KHUSUS SUPERADMIN -->
+      <button type="button" onclick="openModalKoreksiDetail()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 transition flex items-center gap-1.5" title="Koreksi Nilai Margin & Angsuran (Hanya Superadmin)">
+        <i class="fa-solid fa-pen-to-square"></i> Koreksi Margin
+      </button>
+      {% if loan.angsuran_ke == 0 %}
+      <button type="button" onclick="openModalBatalDetail()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-1.5" title="Batalkan Pinjaman & Kembalikan ke Pengajuan (Hanya Superadmin)">
+        <i class="fa-solid fa-undo"></i> Batalkan Pinjaman
+      </button>
+      {% endif %}
+      {% endif %}
+
       {% else %}
       <a href="{{ url_for('cetak_slip_pelunasan', id=loan.id) }}" target="_blank" class="px-3.5 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
         <i class="fa-solid fa-certificate"></i> Surat Keterangan Lunas
@@ -174,4 +187,286 @@
   </div>
 
 </div>
+
+{% if current_user.role == 'superadmin' %}
+<!-- MODAL KOREKSI PINJAMAN & MARGIN DI DETAIL -->
+<div id="modalKoreksiDetail" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden transform transition-all my-8">
+    <div class="bg-gradient-to-r from-amber-600 to-amber-800 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white text-lg border border-white/10">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-bold">Koreksi Margin & Kontrak Pinjaman</h3>
+            <span class="px-2 py-0.5 rounded bg-black/20 text-white text-[10px] font-extrabold uppercase tracking-wider">Superadmin Only</span>
+          </div>
+          <p class="text-xs text-amber-100">Perbaiki kesalahan input plafon, suku margin, atau lama cicilan {{ loan.no_pinjaman }}</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModalKoreksiDetail()" class="text-amber-200 hover:text-white text-lg p-1.5 transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form method="POST" action="{{ url_for('superadmin_pinjaman_koreksi', id=loan.id) }}" class="p-6 space-y-4">
+      <input type="hidden" name="next_url" value="{{ url_for('admin_pinjaman_detail', id=loan.id) }}">
+      
+      <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <div>
+          <span class="text-slate-400 block text-[10px]">No Pinjaman</span>
+          <span class="font-bold font-mono text-slate-800">{{ loan.no_pinjaman }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px]">Nama Anggota</span>
+          <span class="font-bold text-slate-900">{{ loan.nama_anggota }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px]">Kategori & Angsuran Ke</span>
+          <span class="font-semibold text-amber-900">{{ loan.jenis_pinjaman }} • Cicilan ke-{{ loan.angsuran_ke }}</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Plafon Pokok Baru (Rp) <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-bold">Rp</span>
+            <input type="number" name="plafon_pokok" id="inputKoreksiPlafonDet" value="{{ loan.plafon_pokok|int }}" min="100000" step="50000" required oninput="calcKoreksiDetSimulasi()"
+                   class="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold font-mono text-slate-900 focus:ring-2 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tenor Baru (Bulan) <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <input type="number" name="tenor_bulan" id="inputKoreksiTenorDet" value="{{ loan.tenor_bulan }}" min="1" max="60" required oninput="onKoreksiTenorDetChange()"
+                   class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500">
+            <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 text-xs font-bold">Bulan</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-percent text-amber-600"></i> Koreksi Suku Margin
+          </span>
+          <span class="text-[11px] text-slate-500 italic">Margin mengikuti lama waktu cicilan</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Rate Margin / Bulan (%)</label>
+            <div class="relative">
+              <input type="number" step="0.05" name="margin_per_bulan" id="inputKoreksiRateBulanDet" value="{{ (loan.margin_persen / loan.tenor_bulan)|round(2) if loan.tenor_bulan > 0 else 1.0 }}" required oninput="onKoreksiRateBulanDetChange()"
+                     class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-amber-500">
+              <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs font-bold">%/bln</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Margin (%)</label>
+            <div class="relative">
+              <input type="number" step="0.1" name="margin_persen" id="inputKoreksiMarginPersenDet" value="{{ loan.margin_persen }}" required oninput="onKoreksiTotalMarginDetChange()"
+                     class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-amber-500">
+              <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 text-xs font-bold">%</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Nominal Margin</label>
+            <input type="hidden" name="margin_nominal" id="inputKoreksiMarginNominalDet" value="{{ loan.margin_nominal }}">
+            <div id="txtKoreksiMarginNominalDet" class="w-full px-3 py-1.5 bg-amber-100/70 border border-amber-300 rounded-lg text-xs font-bold font-mono text-amber-900 flex items-center">
+              {{ loan.margin_nominal|rupiah }}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+          <span class="text-slate-500 text-[10px] font-medium mr-1">Preset:</span>
+          <button type="button" onclick="setPresetKoreksiDetRate(0.8)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">0.8% / bln</button>
+          <button type="button" onclick="setPresetKoreksiDetRate(1.0)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">1.0% / bln</button>
+          <button type="button" onclick="setPresetKoreksiDetRate(1.25)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">1.25% / bln</button>
+          <button type="button" onclick="setPresetKoreksiDetRate(1.5)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">1.5% / bln</button>
+          <button type="button" onclick="setPresetKoreksiDetRate(2.0)" class="px-2 py-0.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] font-bold">2.0% / bln</button>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-slate-900 to-amber-950 text-white p-4 rounded-xl shadow-inner space-y-2">
+        <div class="flex items-center justify-between border-b border-amber-800/60 pb-2">
+          <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-calculator"></i> Hasil Perhitungan Setelah Koreksi
+          </span>
+          <span id="txtKoreksiTenorTagDet" class="text-[10px] bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded font-mono font-bold">{{ loan.tenor_bulan }} Bulan</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[10px]">Pokok Baru/Bln</span>
+            <span id="txtKoreksiPokokBulanDet" class="font-bold font-mono text-slate-200">{{ loan.angsuran_pokok_bulanan|rupiah }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">Margin Baru/Bln</span>
+            <span id="txtKoreksiMarginBulanDet" class="font-bold font-mono text-amber-400">{{ loan.angsuran_margin_bulanan|rupiah }}</span>
+          </div>
+          <div class="sm:col-span-2 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 text-right">
+            <span class="text-amber-300 block text-[10px] uppercase font-bold">Total Cicilan Baru / Bulan</span>
+            <span id="txtKoreksiTotalAngsuranDet" class="text-base font-extrabold font-mono text-amber-300">{{ loan.total_angsuran_bulanan|rupiah }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">
+          Alasan Koreksi / Catatan Superadmin <span class="text-red-500">*</span>
+        </label>
+        <textarea name="alasan_koreksi" required rows="2" placeholder="Contoh: Koreksi perhitungan margin RAT, disepakati rate 1.0%/bulan selama 10 bulan..."
+                  class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalKoreksiDetail()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </button>
+        <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check"></i> Simpan Koreksi Pinjaman
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL BATALKAN PINJAMAN DI DETAIL -->
+<div id="modalBatalDetail" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden my-8">
+    <div class="bg-rose-600 px-6 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        <div>
+          <h3 class="text-sm font-bold">Batalkan Pinjaman {{ loan.no_pinjaman }}</h3>
+          <p class="text-[11px] text-rose-200">Rollback data pinjaman oleh Superadmin</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModalBatalDetail()" class="text-rose-200 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form method="POST" action="{{ url_for('superadmin_pinjaman_batalkan', id=loan.id) }}" class="p-6 space-y-4">
+      <input type="hidden" name="next_url" value="{{ url_for('admin_pinjaman_list') }}">
+
+      <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 space-y-1">
+        <span class="text-rose-600 text-[10px] font-bold block uppercase tracking-wider">Pinjaman Dibatalkan:</span>
+        <div class="font-bold text-sm text-slate-900">{{ loan.no_pinjaman }}</div>
+        <div class="text-slate-800 font-semibold">{{ loan.nama_anggota }} • {{ loan.plafon_pokok|rupiah }}</div>
+      </div>
+
+      <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+        <span class="block font-bold text-slate-700">Tindakan Status Pengajuan:</span>
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="radio" name="kembalikan_ke_menunggu" value="1" checked class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+          <div>
+            <span class="font-bold text-slate-800 block">Kembalikan ke "Menunggu Verifikasi" (Rekomendasi)</span>
+            <span class="text-[11px] text-slate-500">Pengajuan dapat diverifikasi & disetujui ulang dengan hitungan yang benar.</span>
+          </div>
+        </label>
+        <label class="flex items-start gap-2 cursor-pointer pt-2 border-t border-slate-200">
+          <input type="radio" name="kembalikan_ke_menunggu" value="0" class="mt-0.5 text-rose-600 focus:ring-rose-500">
+          <div>
+            <span class="font-bold text-slate-800 block">Batalkan Permanen (Tandai "Ditolak")</span>
+            <span class="text-[11px] text-slate-500">Pengajuan ditolak sepenuhnya.</span>
+          </div>
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Alasan Pembatalan <span class="text-red-500">*</span></label>
+        <textarea name="alasan_batal" required rows="2" placeholder="Tuliskan alasan pembatalan pinjaman..."
+                  class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-rose-500"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeModalBatalDetail()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Tutup
+        </button>
+        <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-600/25 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-undo"></i> Eksekusi Pembatalan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function formatRupiahDet(num) {
+    return 'Rp ' + Number(Math.round(num || 0)).toLocaleString('id-ID');
+  }
+
+  function openModalKoreksiDetail() {
+    document.getElementById('modalKoreksiDetail').classList.remove('hidden');
+    calcKoreksiDetSimulasi();
+  }
+
+  function closeModalKoreksiDetail() {
+    document.getElementById('modalKoreksiDetail').classList.add('hidden');
+  }
+
+  function openModalBatalDetail() {
+    document.getElementById('modalBatalDetail').classList.remove('hidden');
+  }
+
+  function closeModalBatalDetail() {
+    document.getElementById('modalBatalDetail').classList.add('hidden');
+  }
+
+  function setPresetKoreksiDetRate(rate) {
+    document.getElementById('inputKoreksiRateBulanDet').value = rate;
+    onKoreksiRateBulanDetChange();
+  }
+
+  function onKoreksiTenorDetChange() {
+    onKoreksiRateBulanDetChange();
+  }
+
+  function onKoreksiRateBulanDetChange() {
+    const rate = parseFloat(document.getElementById('inputKoreksiRateBulanDet').value) || 0;
+    const tenor = parseInt(document.getElementById('inputKoreksiTenorDet').value) || 1;
+    const totalMargin = Math.round((rate * tenor) * 100) / 100;
+    document.getElementById('inputKoreksiMarginPersenDet').value = totalMargin;
+    calcKoreksiDetSimulasi();
+  }
+
+  function onKoreksiTotalMarginDetChange() {
+    const totalMargin = parseFloat(document.getElementById('inputKoreksiMarginPersenDet').value) || 0;
+    const tenor = parseInt(document.getElementById('inputKoreksiTenorDet').value) || 1;
+    if (tenor > 0) {
+      const rate = Math.round((totalMargin / tenor) * 100) / 100;
+      document.getElementById('inputKoreksiRateBulanDet').value = rate;
+    }
+    calcKoreksiDetSimulasi();
+  }
+
+  function calcKoreksiDetSimulasi() {
+    const plafon = parseFloat(document.getElementById('inputKoreksiPlafonDet').value) || 0;
+    const tenor = Math.max(1, parseInt(document.getElementById('inputKoreksiTenorDet').value) || 1);
+    const totalMarginPersen = parseFloat(document.getElementById('inputKoreksiMarginPersenDet').value) || 0;
+
+    const nominalMargin = Math.round((plafon * totalMarginPersen) / 100);
+    document.getElementById('inputKoreksiMarginNominalDet').value = nominalMargin;
+    document.getElementById('txtKoreksiMarginNominalDet').textContent = formatRupiahDet(nominalMargin);
+
+    const angsuranPokok = Math.round(plafon / tenor);
+    const angsuranMargin = Math.round(nominalMargin / tenor);
+    const totalAngsuran = angsuranPokok + angsuranMargin;
+
+    document.getElementById('txtKoreksiTenorTagDet').textContent = tenor + ' Bulan';
+    document.getElementById('txtKoreksiPokokBulanDet').textContent = formatRupiahDet(angsuranPokok);
+    document.getElementById('txtKoreksiMarginBulanDet').textContent = formatRupiahDet(angsuranMargin);
+    document.getElementById('txtKoreksiTotalAngsuranDet').textContent = formatRupiahDet(totalAngsuran);
+  }
+</script>
+{% endif %}
+
 {% endblock %}
