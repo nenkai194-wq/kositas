@@ -45,7 +45,7 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Layanan Pembiayaan Baru</label>
-          <select name="jenis_pinjaman" id="selectJenis" onchange="calcTopup()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+          <select name="jenis_pinjaman" id="selectJenis" onchange="onJenisChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
             <option value="JAPAN" {% if loan.jenis_pinjaman == 'JAPAN' %}selected{% endif %}>JAPAN - Jangka Panjang (Maks Rp 30 Juta, Tenor s/d 30 Bln)</option>
             <option value="JAPEN" {% if loan.jenis_pinjaman == 'JAPEN' %}selected{% endif %}>JAPEN - Jangka Pendek (Maks Rp 7 Juta, Tenor s/d 10 Bln)</option>
             <option value="Bon Putih" {% if loan.jenis_pinjaman == 'Bon Putih' %}selected{% endif %}>Bon Putih / Kas (Maks Rp 1 Juta)</option>
@@ -53,6 +53,7 @@
           </select>
         </div>
 
+        <!-- Plafon & Tenor -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Plafon Pinjaman Baru (Rp) <span class="text-red-500">*</span></label>
@@ -63,23 +64,66 @@
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Tenor Baru (Bulan) <span class="text-red-500">*</span></label>
-            <input type="number" name="tenor_bulan" id="inputTenorBaru" value="24" min="1" max="60" required oninput="calcTopup()"
+            <input type="number" name="tenor_bulan" id="inputTenorBaru" value="24" min="1" max="60" required oninput="onTenorBaruChange()"
                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Margin / Jasa Total (%)</label>
-            <input type="number" name="margin_persen" id="inputMarginPersen" value="25.0" step="any" oninput="calcTopup()"
-                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+        <!-- Penetapan Suku Margin & Jasa (Rate Per Bulan & Total Margin) -->
+        <div class="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-percent text-indigo-600"></i> Ketetapan Suku Margin & Jasa
+            </span>
+            <span class="text-[11px] text-indigo-700 italic">Margin mengikuti lama cicilan</span>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Akad & Pencairan</label>
-            <input type="date" name="tanggal_cair" value="{{ current_month }}-01" required
-                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Rate Margin / Bulan -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Rate Margin / Bulan (%) <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="number" step="any" name="margin_per_bulan" id="inputRateBulan" value="1.0" required oninput="onRateBulanChange()"
+                       class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-indigo-600 text-xs font-bold">%/bln</span>
+              </div>
+            </div>
+
+            <!-- Total Margin (%) -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Margin (%) <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="number" step="any" name="margin_persen" id="inputMarginPersen" value="24.0" required oninput="onTotalMarginChange()"
+                       class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-indigo-600 text-xs font-bold">%</span>
+              </div>
+            </div>
+
+            <!-- Nominal Margin Total -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Nominal Margin</label>
+              <input type="hidden" name="margin_nominal" id="inputMarginNominal">
+              <div id="txtTopNominalMargin" class="w-full px-3 py-2 bg-indigo-100/80 border border-indigo-300 rounded-lg text-xs font-bold font-mono text-indigo-900 flex items-center">
+                Rp 0
+              </div>
+            </div>
           </div>
+
+          <!-- Preset Cepat Suku Margin -->
+          <div class="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
+            <span class="text-slate-500 text-[10px] font-medium mr-1">Preset:</span>
+            <button type="button" onclick="setPresetRate(0.8)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">0.8% / bln</button>
+            <button type="button" onclick="setPresetRate(1.0)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">1.0% / bln (Standar)</button>
+            <button type="button" onclick="setPresetRate(1.25)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">1.25% / bln</button>
+            <button type="button" onclick="setPresetRate(1.5)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">1.5% / bln</button>
+            <button type="button" onclick="setPresetRate(2.0)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">2.0% / bln (Bon Putih)</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Akad & Pencairan</label>
+          <input type="date" name="tanggal_cair" value="{{ current_month }}-01" required
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
         </div>
 
         <div>
@@ -128,6 +172,14 @@
             <span class="text-slate-300">Plafon Pinjaman Baru:</span>
             <span id="topPlafonBaru" class="font-bold font-mono">Rp 0</span>
           </div>
+          <div class="flex justify-between pt-2">
+            <span class="text-slate-300">Suku Margin / Bulan:</span>
+            <span id="topRateMargin" class="font-bold font-mono text-indigo-300">1.0% / bln</span>
+          </div>
+          <div class="flex justify-between pt-2">
+            <span class="text-slate-300">Total Margin Koperasi:</span>
+            <span id="topMarginNominal" class="font-bold font-mono text-emerald-400">Rp 0 (24%)</span>
+          </div>
           <div class="flex justify-between pt-2 text-amber-300">
             <span>Pelunasan Sisa Pokok Lama:</span>
             <span class="font-bold font-mono">- {{ loan.saldo_pokok|rupiah }}</span>
@@ -143,6 +195,10 @@
           <div class="flex justify-between pt-2 border-t border-indigo-700/60 font-bold text-white">
             <span>Angsuran Baru Per Bulan:</span>
             <span id="topAngsuranBaru" class="font-mono text-indigo-200 text-sm">Rp 0</span>
+          </div>
+          <div class="flex justify-between pt-1 text-[11px] text-indigo-300">
+            <span>Rincian Angsuran:</span>
+            <span>Pokok: <span id="topAngsPokok" class="font-mono font-bold text-white">Rp 0</span> + Margin: <span id="topAngsMargin" class="font-mono font-bold text-white">Rp 0</span></span>
           </div>
         </div>
 
@@ -165,26 +221,75 @@
 
   const sisaPokokLama = {{ loan.saldo_pokok }};
 
+  function onJenisChange() {
+    const jenis = document.getElementById('selectJenis').value;
+    let rate = 1.0;
+    if (jenis === 'Bon Putih') rate = 2.0;
+    else if (jenis === 'Barang') rate = 1.5;
+    else rate = 1.0;
+    
+    document.getElementById('inputRateBulan').value = rate;
+    onRateBulanChange();
+  }
+
+  function setPresetRate(rate) {
+    document.getElementById('inputRateBulan').value = rate;
+    onRateBulanChange();
+  }
+
+  function onRateBulanChange() {
+    const rate = parseFloat(document.getElementById('inputRateBulan').value) || 0;
+    const tenor = parseInt(document.getElementById('inputTenorBaru').value) || 1;
+    const totalMargin = Math.round(rate * tenor * 100) / 100;
+    document.getElementById('inputMarginPersen').value = totalMargin;
+    calcTopup();
+  }
+
+  function onTotalMarginChange() {
+    const totalMargin = parseFloat(document.getElementById('inputMarginPersen').value) || 0;
+    const tenor = parseInt(document.getElementById('inputTenorBaru').value) || 1;
+    if (tenor > 0) {
+      const rate = Math.round((totalMargin / tenor) * 100) / 100;
+      document.getElementById('inputRateBulan').value = rate;
+    }
+    calcTopup();
+  }
+
+  function onTenorBaruChange() {
+    const rate = parseFloat(document.getElementById('inputRateBulan').value) || 0;
+    const tenor = parseInt(document.getElementById('inputTenorBaru').value) || 1;
+    document.getElementById('inputMarginPersen').value = Math.round(rate * tenor * 100) / 100;
+    calcTopup();
+  }
+
   function calcTopup() {
     const jenis = document.getElementById('selectJenis').value;
     const plafonBaru = parseFloat(document.getElementById('inputPlafonBaru').value || 0);
-    const tenor = parseInt(document.getElementById('inputTenorBaru').value || 1);
+    const tenor = Math.max(1, parseInt(document.getElementById('inputTenorBaru').value || 1));
+    const rateBulan = parseFloat(document.getElementById('inputRateBulan').value || 0);
     const marginP = parseFloat(document.getElementById('inputMarginPersen').value || 0);
 
-    const marginNominal = (plafonBaru * marginP) / 100.0;
-    const angsPokok = tenor > 0 ? (plafonBaru / tenor) : 0;
-    const angsMargin = tenor > 0 ? (marginNominal / tenor) : 0;
+    const marginNominal = Math.round((plafonBaru * marginP) / 100.0);
+    document.getElementById('inputMarginNominal').value = marginNominal;
+    document.getElementById('txtTopNominalMargin').textContent = formatRupiah(marginNominal);
+
+    const angsPokok = Math.round(plafonBaru / tenor);
+    const angsMargin = Math.round(marginNominal / tenor);
     const totalAngs = angsPokok + angsMargin;
 
-    const provisi = (jenis === 'Bon Putih' || jenis === 'Barang') ? 0 : (plafonBaru * 0.01);
-    const drk = jenis === 'JAPAN' ? (plafonBaru * 0.005) : 0;
+    const provisi = (jenis === 'Bon Putih' || jenis === 'Barang') ? 0 : Math.round(plafonBaru * 0.01);
+    const drk = jenis === 'JAPAN' ? Math.round(plafonBaru * 0.005) : 0;
     const danaBersih = plafonBaru - sisaPokokLama - provisi - drk;
 
     document.getElementById('topPlafonBaru').textContent = formatRupiah(plafonBaru);
+    document.getElementById('topRateMargin').textContent = (Math.round(rateBulan * 100) / 100) + '% / bln';
+    document.getElementById('topMarginNominal').textContent = `${formatRupiah(marginNominal)} (${marginP}%)`;
     document.getElementById('topProvisi').textContent = '- ' + formatRupiah(provisi);
     document.getElementById('topDRK').textContent = '- ' + formatRupiah(drk);
     document.getElementById('topDanaBersih').textContent = formatRupiah(danaBersih);
     document.getElementById('topAngsuranBaru').textContent = formatRupiah(totalAngs) + '/bln';
+    document.getElementById('topAngsPokok').textContent = formatRupiah(angsPokok);
+    document.getElementById('topAngsMargin').textContent = formatRupiah(angsMargin);
   }
 
   function validateTopupForm(e) {
@@ -197,6 +302,7 @@
     return confirm('Konfirmasi proses Top Up? Pinjaman lama akan otomatis ditutup (Lunas) dan pinjaman baru akan aktif.');
   }
 
-  calcTopup();
+  // Initial calculation
+  onRateBulanChange();
 </script>
 {% endblock %}

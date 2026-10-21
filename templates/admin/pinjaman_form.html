@@ -38,7 +38,7 @@
         <!-- Jenis Pinjaman -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Layanan Pembiayaan <span class="text-red-500">*</span></label>
-          <select name="jenis_pinjaman" id="selectJenis" onchange="hitungSimulasi()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+          <select name="jenis_pinjaman" id="selectJenis" onchange="onJenisChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
             <option value="JAPAN" selected>JAPAN - Jangka Panjang (Maks Rp 30 Juta, Tenor s/d 30 Bln)</option>
             <option value="JAPEN">JAPEN - Jangka Pendek (Maks Rp 7 Juta, Tenor s/d 10 Bln)</option>
             <option value="Bon Putih">Bon Putih / Kas (Maks Rp 1 Juta, 2%/Bln)</option>
@@ -50,31 +50,72 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Plafon Pokok (Rp) <span class="text-red-500">*</span></label>
-            <input type="number" name="plafon_pokok" id="inputPlafon" value="10000000" min="100000" step="100000" required oninput="hitungSimulasi()"
+            <input type="number" name="plafon_pokok" id="inputPlafon" value="10000000" min="100000" step="any" required oninput="hitungSimulasiManual()"
                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Tenor (Bulan) <span class="text-red-500">*</span></label>
-            <input type="number" name="tenor_bulan" id="inputTenor" value="20" min="1" max="36" required oninput="hitungSimulasi()"
+            <input type="number" name="tenor_bulan" id="inputTenor" value="20" min="1" max="60" required oninput="onTenorChange()"
                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
         </div>
 
-        <!-- Margin Persen (Bisa Diubah jika disepakati berbeda) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Margin / Jasa Total (%)</label>
-            <input type="number" name="margin_persen" id="inputMarginPersen" value="25.0" step="0.1" oninput="hitungSimulasiManual()"
-                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-            <p class="text-[10px] text-slate-400 mt-1">Otomatis terisi standar RAT, dapat disesuaikan.</p>
+        <!-- Penetapan Suku Margin & Jasa (Rate Per Bulan & Total Margin) -->
+        <div class="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-percent text-indigo-600"></i> Ketetapan Suku Margin & Jasa
+            </span>
+            <span class="text-[11px] text-indigo-700 italic">Margin per bulan & total terkontrol</span>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Cair / Akad</label>
-            <input type="date" name="tanggal_cair" value="{{ current_month }}-01" required
-                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Rate Margin / Bulan -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Rate Margin / Bulan (%) <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="number" step="any" name="margin_per_bulan" id="inputRateBulan" value="1.0" required oninput="onRateBulanChange()"
+                       class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-indigo-600 text-xs font-bold">%/bln</span>
+              </div>
+            </div>
+
+            <!-- Total Margin (%) -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Margin (%) <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="number" step="any" name="margin_persen" id="inputMarginPersen" value="20.0" required oninput="onTotalMarginChange()"
+                       class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-indigo-600 text-xs font-bold">%</span>
+              </div>
+            </div>
+
+            <!-- Nominal Margin Total -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Nominal Margin</label>
+              <input type="hidden" name="margin_nominal" id="inputMarginNominal">
+              <div id="txtSimMarginNominal" class="w-full px-3 py-2 bg-indigo-100/80 border border-indigo-300 rounded-lg text-xs font-bold font-mono text-indigo-900 flex items-center">
+                Rp 0
+              </div>
+            </div>
           </div>
+
+          <!-- Preset Cepat Suku Margin -->
+          <div class="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
+            <span class="text-slate-500 text-[10px] font-medium mr-1">Preset:</span>
+            <button type="button" onclick="setPresetRate(0.8)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">0.8% / bln</button>
+            <button type="button" onclick="setPresetRate(1.0)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">1.0% / bln (Standar)</button>
+            <button type="button" onclick="setPresetRate(1.25)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">1.25% / bln</button>
+            <button type="button" onclick="setPresetRate(1.5)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">1.5% / bln</button>
+            <button type="button" onclick="setPresetRate(2.0)" class="px-2 py-0.5 rounded bg-white hover:bg-indigo-100 border border-indigo-200 text-slate-700 text-[10px] font-bold transition">2.0% / bln (Bon Putih)</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Cair / Akad <span class="text-red-500">*</span></label>
+          <input type="date" name="tanggal_cair" value="{{ current_month }}-01" required
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
         </div>
 
         <!-- Keperluan & Keterangan -->
@@ -134,8 +175,12 @@
             <span id="simPlafon" class="font-bold font-mono">Rp 0</span>
           </div>
           <div class="flex justify-between pt-2">
+            <span class="text-slate-300">Suku Margin / Bulan:</span>
+            <span id="simRateBulan" class="font-bold font-mono text-indigo-300">1.0% / bln</span>
+          </div>
+          <div class="flex justify-between pt-2">
             <span class="text-slate-300">Total Margin Koperasi:</span>
-            <span id="simMarginNominal" class="font-bold font-mono text-emerald-400">Rp 0</span>
+            <span id="simMarginNominal" class="font-bold font-mono text-emerald-400">Rp 0 (20%)</span>
           </div>
           <div class="flex justify-between pt-2">
             <span class="text-slate-300">Total Piutang (Pokok + Margin):</span>
@@ -172,55 +217,92 @@
     return 'Rp ' + Number(Math.round(num)).toLocaleString('id-ID');
   }
 
-  function hitungSimulasi() {
+  function onJenisChange() {
     const jenis = document.getElementById('selectJenis').value;
-    const inputMargin = document.getElementById('inputMarginPersen');
+    const inputTenor = document.getElementById('inputTenor');
+    let rate = 1.0;
 
-    // Default margin per jenis sesuai aturan RAT KOSITAS
     if (jenis === 'JAPAN') {
-      inputMargin.value = '25.0';
-      document.getElementById('inputTenor').value = '24';
+      inputTenor.value = '24';
+      rate = 1.0;
     } else if (jenis === 'JAPEN') {
-      inputMargin.value = '10.0';
-      document.getElementById('inputTenor').value = '10';
+      inputTenor.value = '10';
+      rate = 1.0;
     } else if (jenis === 'Bon Putih') {
-      inputMargin.value = '4.0'; // 2% per bln
-      document.getElementById('inputTenor').value = '2';
+      inputTenor.value = '2';
+      rate = 2.0;
     } else if (jenis === 'Barang') {
-      inputMargin.value = '20.0';
-      document.getElementById('inputTenor').value = '10';
+      inputTenor.value = '10';
+      rate = 1.5;
     }
+    
+    document.getElementById('inputRateBulan').value = rate;
+    onRateBulanChange();
+  }
+
+  function setPresetRate(rate) {
+    document.getElementById('inputRateBulan').value = rate;
+    onRateBulanChange();
+  }
+
+  function onRateBulanChange() {
+    const rate = parseFloat(document.getElementById('inputRateBulan').value) || 0;
+    const tenor = parseInt(document.getElementById('inputTenor').value) || 1;
+    const totalMargin = Math.round(rate * tenor * 100) / 100;
+    document.getElementById('inputMarginPersen').value = totalMargin;
+    hitungSimulasiManual();
+  }
+
+  function onTotalMarginChange() {
+    const totalMargin = parseFloat(document.getElementById('inputMarginPersen').value) || 0;
+    const tenor = parseInt(document.getElementById('inputTenor').value) || 1;
+    if (tenor > 0) {
+      const rate = Math.round((totalMargin / tenor) * 100) / 100;
+      document.getElementById('inputRateBulan').value = rate;
+    }
+    hitungSimulasiManual();
+  }
+
+  function onTenorChange() {
+    const rate = parseFloat(document.getElementById('inputRateBulan').value) || 0;
+    const tenor = parseInt(document.getElementById('inputTenor').value) || 1;
+    document.getElementById('inputMarginPersen').value = Math.round(rate * tenor * 100) / 100;
     hitungSimulasiManual();
   }
 
   function hitungSimulasiManual() {
     const jenis = document.getElementById('selectJenis').value;
     const plafon = parseFloat(document.getElementById('inputPlafon').value || 0);
-    const tenor = parseInt(document.getElementById('inputTenor').value || 1);
+    const tenor = Math.max(1, parseInt(document.getElementById('inputTenor').value || 1));
+    const rateBulan = parseFloat(document.getElementById('inputRateBulan').value || 0);
     const marginPersen = parseFloat(document.getElementById('inputMarginPersen').value || 0);
 
-    const marginNominal = (plafon * marginPersen) / 100.0;
+    const marginNominal = Math.round((plafon * marginPersen) / 100.0);
+    document.getElementById('inputMarginNominal').value = marginNominal;
+    document.getElementById('txtSimMarginNominal').textContent = formatRupiah(marginNominal);
+
     const totalPiutang = plafon + marginNominal;
-    const angsPokok = tenor > 0 ? (plafon / tenor) : 0;
-    const angsMargin = tenor > 0 ? (marginNominal / tenor) : 0;
+    const angsPokok = Math.round(plafon / tenor);
+    const angsMargin = Math.round(marginNominal / tenor);
     const totalAngs = angsPokok + angsMargin;
 
-    const provisi = jenis === 'Bon Putih' || jenis === 'Barang' ? 0 : (plafon * 0.01);
-    const drk = jenis === 'JAPAN' ? (plafon * 0.005) : 0;
-    const danaCair = plafon - provisi - drk;
+    const provisi = (jenis === 'Bon Putih' || jenis === 'Barang') ? 0 : Math.round(plafon * 0.01);
+    const drk = jenis === 'JAPAN' ? Math.round(plafon * 0.005) : 0;
+    const danaCair = Math.max(0, plafon - provisi - drk);
 
     document.getElementById('simTotalAngsuran').textContent = formatRupiah(totalAngs);
     document.getElementById('simAngsPokok').textContent = formatRupiah(angsPokok);
     document.getElementById('simAngsMargin').textContent = formatRupiah(angsMargin);
     document.getElementById('simPlafon').textContent = formatRupiah(plafon);
-    document.getElementById('simMarginNominal').textContent = formatRupiah(marginNominal);
+    document.getElementById('simRateBulan').textContent = (Math.round(rateBulan * 100) / 100) + '% / bln';
+    document.getElementById('simMarginNominal').textContent = `${formatRupiah(marginNominal)} (${marginPersen}%)`;
     document.getElementById('simTotalPiutang').textContent = formatRupiah(totalPiutang);
     document.getElementById('simProvisi').textContent = formatRupiah(provisi);
     document.getElementById('simDRK').textContent = formatRupiah(drk);
     document.getElementById('simDanaCair').textContent = formatRupiah(danaCair);
   }
 
-  // Run on page load
-  hitungSimulasi();
+  // Initial call on load
+  onRateBulanChange();
 </script>
 {% endblock %}

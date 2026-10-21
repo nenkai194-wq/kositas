@@ -116,7 +116,7 @@
                 </span>
                 <span class="font-mono font-bold text-slate-800">{{ pj.plafon_pokok|rupiah }}</span>
               </div>
-              <span class="text-[10px] text-slate-500">Margin: {{ pj.margin_nominal|rupiah }} ({{ pj.margin_persen }}%)</span>
+              <span class="text-[10px] text-slate-500 block">Margin: {{ pj.margin_nominal|rupiah }} ({{ (pj.margin_persen / pj.tenor_bulan)|round(2) if pj.tenor_bulan > 0 else 0 }}%/bln • {{ pj.margin_persen }}%)</span>
             </td>
 
             <td class="py-3 px-4">

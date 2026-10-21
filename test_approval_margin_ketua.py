@@ -213,5 +213,72 @@ class TestApprovalMarginKetua(unittest.TestCase):
         conn.commit()
         conn.close()
 
+    def test_topup_dengan_rate_margin_per_bulan(self):
+        conn = database.get_db()
+        cursor = conn.cursor()
+
+        # Buat pinjaman awal
+        no_pj = "PJ-TEST-TOPUP-01"
+        cursor.execute("DELETE FROM pinjaman WHERE no_pinjaman = ?", (no_pj,))
+        cursor.execute('''
+        INSERT INTO pinjaman (
+            no_pinjaman, anggota_id, jenis_pinjaman, plafon_pokok, tenor_bulan,
+            margin_persen, margin_nominal, total_pinjaman, angsuran_pokok_bulanan,
+            angsuran_margin_bulanan, total_angsuran_bulanan, saldo_pokok, saldo_margin,
+            biaya_provisi, biaya_drk, tanggal_pengajuan, tanggal_cair,
+            status, angsuran_ke, pelunasan_tipe, keperluan
+        ) VALUES (
+            ?, 2, 'JAPEN', 3000000.0, 10,
+            10.0, 300000.0, 3300000.0, 300000.0,
+            30000.0, 330000.0, 2000000.0, 200000.0,
+            30000.0, 0.0, '2026-01-01', '2026-01-01',
+            'Aktif', 3, 'Normal', 'Pinjaman lama'
+        )
+        ''', (no_pj,))
+        pj_lama_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        # Eksekusi top up dengan data form: Rate Margin 1.25%/bulan x 12 bulan = Total Margin 15%
+        res = self.client.post(f'/admin/pinjaman/{pj_lama_id}/topup', data={
+            'jenis_pinjaman': 'JAPEN',
+            'plafon_pokok': '5000000',
+            'tenor_bulan': '12',
+            'margin_per_bulan': '1.25',
+            'margin_persen': '15.0',
+            'margin_nominal': '750000',
+            'tanggal_cair': '2026-10-21',
+            'keperluan': 'Top up refinancing margin uji'
+        }, follow_redirects=True)
+
+        self.assertEqual(res.status_code, 200)
+
+        # Verifikasi pinjaman baru terbentuk dan margin sesuai
+        conn = database.get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+        SELECT * FROM pinjaman WHERE anggota_id = 2 AND keperluan LIKE '%refinancing margin uji%'
+        ORDER BY id DESC LIMIT 1
+        ''')
+        pj_baru = dict(cursor.fetchone())
+        self.assertIsNotNone(pj_baru)
+        self.assertEqual(pj_baru['plafon_pokok'], 5000000.0)
+        self.assertEqual(pj_baru['tenor_bulan'], 12)
+        self.assertEqual(pj_baru['margin_persen'], 15.0)
+        self.assertEqual(pj_baru['margin_nominal'], 750000.0)
+        self.assertEqual(pj_baru['angsuran_margin_bulanan'], 62500.0)
+
+        # Verifikasi pinjaman lama ditutup
+        cursor.execute("SELECT status, pelunasan_tipe FROM pinjaman WHERE id = ?", (pj_lama_id,))
+        pj_lama_cek = dict(cursor.fetchone())
+        self.assertEqual(pj_lama_cek['status'], 'Lunas')
+        self.assertEqual(pj_lama_cek['pelunasan_tipe'], 'Top Up')
+
+        # Cleanup
+        cursor.execute("DELETE FROM angsuran_pinjaman WHERE pinjaman_id IN (?, ?)", (pj_lama_id, pj_baru['id']))
+        cursor.execute("DELETE FROM pinjaman WHERE id IN (?, ?)", (pj_lama_id, pj_baru['id']))
+        conn.commit()
+        conn.close()
+
 if __name__ == '__main__':
     unittest.main()

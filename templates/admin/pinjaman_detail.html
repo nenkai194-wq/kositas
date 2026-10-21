@@ -83,7 +83,10 @@
       </div>
       <div>
         <span class="text-[10px] text-slate-400 block uppercase font-bold">Margin Koperasi</span>
-        <span class="text-base font-bold text-slate-700 font-mono">{{ loan.margin_nominal|rupiah }} ({{ loan.margin_persen }}%)</span>
+        <span class="text-base font-bold text-slate-700 font-mono">{{ loan.margin_nominal|rupiah }}</span>
+        <span class="text-[10px] text-indigo-700 block font-bold">
+          Rate {{ ((loan.margin_persen / loan.tenor_bulan)|round(2)) if loan.tenor_bulan > 0 else 0 }}%/bln (Total {{ loan.margin_persen }}%)
+        </span>
       </div>
       <div>
         <span class="text-[10px] text-slate-400 block uppercase font-bold">Sisa Pokok Hutang</span>
@@ -92,7 +95,7 @@
       <div>
         <span class="text-[10px] text-slate-400 block uppercase font-bold">Angsuran / Bulan</span>
         <span class="text-base font-bold text-slate-800 font-mono">{{ loan.total_angsuran_bulanan|rupiah }}</span>
-        <span class="text-[10px] text-slate-400 block">Pokok: {{ loan.angsuran_pokok_bulanan|rupiah }}</span>
+        <span class="text-[10px] text-slate-500 block">Pokok: {{ loan.angsuran_pokok_bulanan|rupiah }} • Margin: {{ loan.angsuran_margin_bulanan|rupiah }}</span>
       </div>
       <div>
         <span class="text-[10px] text-slate-400 block uppercase font-bold">Tenor & Cicilan</span>

@@ -106,7 +106,8 @@
         </div>
         <div>
           <span class="text-[10px] text-slate-400 block font-semibold">Margin / Jasa</span>
-          <span class="font-mono font-bold text-slate-800">{{ pj.margin_nominal|rupiah }} ({{ pj.margin_persen }}%)</span>
+          <span class="font-mono font-bold text-slate-800">{{ pj.margin_nominal|rupiah }}</span>
+          <span class="text-[10px] text-indigo-700 block font-semibold">{{ (pj.margin_persen / pj.tenor_bulan)|round(2) if pj.tenor_bulan > 0 else 0 }}%/bln (Total {{ pj.margin_persen }}%)</span>
         </div>
         <div>
           <span class="text-[10px] text-slate-400 block font-semibold">Sisa Pokok Hutang</span>
@@ -115,6 +116,7 @@
         <div>
           <span class="text-[10px] text-slate-400 block font-semibold">Cicilan / Bulan</span>
           <span class="font-mono font-bold text-slate-800">{{ pj.total_angsuran_bulanan|rupiah }}</span>
+          <span class="text-[10px] text-slate-400 block">Pokok {{ pj.angsuran_pokok_bulanan|rupiah }} + Margin {{ pj.angsuran_margin_bulanan|rupiah }}</span>
         </div>
         <div>
           <span class="text-[10px] text-slate-400 block font-semibold">Tenor Terlewati</span>

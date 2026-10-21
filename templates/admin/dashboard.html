@@ -349,7 +349,7 @@
               <td class="py-2.5 px-3">
                 <span class="font-semibold text-slate-700">Tenor: {{ req.tenor_bulan }} bln</span>
                 {% if req.pj_margin_persen is not none %}
-                <div class="text-[11px] text-slate-500">Margin: {{ req.pj_margin_persen }}% ({{ req.pj_margin_nominal|rupiah }})</div>
+                <div class="text-[11px] text-slate-500 font-medium">Margin: {{ (req.pj_margin_persen / req.tenor_bulan)|round(2) if req.tenor_bulan > 0 else 0 }}%/bln (Total {{ req.pj_margin_persen }}% • {{ req.pj_margin_nominal|rupiah }})</div>
                 {% else %}
                 <div class="text-[10px] text-slate-400">-</div>
                 {% endif %}
