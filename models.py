@@ -452,6 +452,12 @@ def koreksi_pinjaman_margin(pinjaman_id, data_koreksi, user_id=None):
     pj = dict(row)
     angsuran_ke = pj['angsuran_ke']
 
+    # KETENTUAN KOSITAS: Koreksi margin hanya dapat dilakukan jika kurang dari sama dengan 1 kali cicilan (angsuran_ke <= 1).
+    # Apabila sudah cicilan ke-2 atau lebih, edit margin TIDAK BISA dilakukan.
+    if angsuran_ke > 1:
+        conn.close()
+        return False, f"Koreksi nilai margin TIDAK BISA DILAKUKAN! Pinjaman {pj['no_pinjaman']} telah berjalan hingga cicilan ke-{angsuran_ke}. Sesuai ketentuan KOSITAS, edit margin hanya diizinkan maksimal sampai dengan cicilan ke-1."
+
     plafon_pokok = float(data_koreksi.get('plafon_pokok', pj['plafon_pokok']))
     tenor_bulan = max(1, int(data_koreksi.get('tenor_bulan', pj['tenor_bulan'])))
     margin_persen = float(data_koreksi.get('margin_persen', pj['margin_persen']))
@@ -469,14 +475,20 @@ def koreksi_pinjaman_margin(pinjaman_id, data_koreksi, user_id=None):
     biaya_provisi = round((plafon_pokok * 1.0) / 100.0, 2)
     biaya_drk = round((plafon_pokok * 0.5) / 100.0, 2) if 'JAPAN' in pj['jenis_pinjaman'].upper() else 0.0
 
-    # Jika belum ada cicilan berjalan, saldo reset ke angka baru
+    # Jika belum ada cicilan (0 kali), saldo reset penuh ke angka baru
     if angsuran_ke == 0:
         saldo_pokok = plafon_pokok
         saldo_margin = margin_nominal
     else:
-        # Jika cicilan sudah berjalan sebagian
-        pokok_terbayar = pj['plafon_pokok'] - pj['saldo_pokok']
-        margin_terbayar = pj['margin_nominal'] - pj['saldo_margin']
+        # Jika sudah 1 kali cicilan (angsuran_ke == 1), kurangi dengan angsuran pertama yang telah masuk
+        cursor.execute("SELECT angsuran_pokok, angsuran_margin FROM angsuran_pinjaman WHERE pinjaman_id = ? AND angsuran_ke = 1", (pinjaman_id,))
+        angs1 = cursor.fetchone()
+        if angs1:
+            pokok_terbayar = float(angs1[0])
+            margin_terbayar = float(angs1[1])
+        else:
+            pokok_terbayar = pj['plafon_pokok'] - pj['saldo_pokok']
+            margin_terbayar = pj['margin_nominal'] - pj['saldo_margin']
         saldo_pokok = max(0.0, plafon_pokok - pokok_terbayar)
         saldo_margin = max(0.0, margin_nominal - margin_terbayar)
 

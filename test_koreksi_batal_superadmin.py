@@ -108,5 +108,77 @@ class TestKoreksiBatalSuperadmin(unittest.TestCase):
         res_batal = self.client.post('/admin/pinjaman/1/batalkan', data={'alasan_batal': 'coba'})
         self.assertEqual(res_batal.status_code, 302)
 
+    def test_koreksi_margin_batas_cicilan_kedua(self):
+        # Login sebagai superadmin (id=7)
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 7
+            sess['role'] = 'superadmin'
+
+        # Buat pinjaman uji
+        pj_id = models.tambah_pinjaman({
+            'anggota_id': 2,
+            'jenis_pinjaman': 'JAPEN',
+            'plafon_pokok': 5000000,
+            'tenor_bulan': 5,
+            'margin_persen': 5.0, # 250.000
+            'keperluan': 'Uji batas cicilan'
+        })
+
+        # Skenario 1: Cicilan ke-1 dibayar (angsuran_ke = 1) -> Edit margin HARUS BISA
+        models.bayar_angsuran({
+            'pinjaman_id': pj_id,
+            'angsuran_pokok': 1000000,
+            'angsuran_margin': 50000,
+            'metode_bayar': 'Transfer'
+        })
+        pj_1 = models.get_pinjaman_by_id(pj_id)
+        self.assertEqual(pj_1['angsuran_ke'], 1)
+
+        # Edit margin saat cicilan ke-1
+        success_1, msg_1 = models.koreksi_pinjaman_margin(pj_id, {
+            'plafon_pokok': 5000000,
+            'tenor_bulan': 5,
+            'margin_persen': 7.5, # 375.000
+            'alasan_koreksi': 'Koreksi margin disetujui saat cicilan ke-1'
+        })
+        self.assertTrue(success_1, "Edit margin saat cicilan ke-1 harus berhasil")
+        pj_after_1 = models.get_pinjaman_by_id(pj_id)
+        self.assertEqual(pj_after_1['margin_persen'], 7.5)
+        self.assertEqual(pj_after_1['margin_nominal'], 375000.0)
+        # Sisa margin = 375.000 - 50.000 (sudah bayar) = 325.000
+        self.assertEqual(pj_after_1['saldo_margin'], 325000.0)
+
+        # Skenario 2: Cicilan ke-2 dibayar (angsuran_ke = 2) -> Edit margin HARUS GAGAL
+        models.bayar_angsuran({
+            'pinjaman_id': pj_id,
+            'angsuran_pokok': 1000000,
+            'angsuran_margin': 75000,
+            'metode_bayar': 'Transfer'
+        })
+        pj_2 = models.get_pinjaman_by_id(pj_id)
+        self.assertEqual(pj_2['angsuran_ke'], 2)
+
+        # Coba edit margin saat cicilan ke-2
+        success_2, msg_2 = models.koreksi_pinjaman_margin(pj_id, {
+            'plafon_pokok': 5000000,
+            'tenor_bulan': 5,
+            'margin_persen': 10.0,
+            'alasan_koreksi': 'Coba edit saat cicilan ke-2'
+        })
+        self.assertFalse(success_2, "Edit margin saat cicilan ke-2 HARUS DITOLAK")
+        self.assertIn("TIDAK BISA DILAKUKAN", msg_2)
+
+        # Verifikasi margin tidak berubah
+        pj_after_2 = models.get_pinjaman_by_id(pj_id)
+        self.assertEqual(pj_after_2['margin_persen'], 7.5) # Tetap 7.5, tidak menjadi 10.0
+
+        # Cleanup
+        conn = database.get_db()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM angsuran_pinjaman WHERE pinjaman_id = ?", (pj_id,))
+        cur.execute("DELETE FROM pinjaman WHERE id = ?", (pj_id,))
+        conn.commit()
+        conn.close()
+
 if __name__ == '__main__':
     unittest.main()

@@ -368,6 +368,7 @@
                 {% if current_user.role == 'superadmin' %}
                   {% if req.jenis == 'PINJAMAN' and req.pinjaman_id_real %}
                   <div class="inline-flex items-center gap-1.5">
+                    {% if (req.pj_angsuran_ke or 0) <= 1 %}
                     <button type="button" 
                             onclick="openModalKoreksiSuperadmin(this)"
                             data-pinjamanid="{{ req.pinjaman_id_real }}"
@@ -383,9 +384,17 @@
                             data-marginnominal="{{ req.pj_margin_nominal or 0 }}"
                             data-angsuranke="{{ req.pj_angsuran_ke or 0 }}"
                             class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1 text-[11px]"
-                            title="Koreksi Nilai Margin & Angsuran (Khusus Superadmin)">
+                            title="Koreksi Nilai Margin & Angsuran (Maksimal <= 1 kali cicilan)">
                       <i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit
                     </button>
+                    {% else %}
+                    <span class="px-2 py-1 rounded-lg text-[10px] bg-slate-100 text-slate-400 font-bold border border-slate-200 cursor-not-allowed inline-flex items-center gap-1"
+                          title="Terkunci: Pinjaman sudah berjalan hingga cicilan ke-{{ req.pj_angsuran_ke }}. Koreksi margin hanya bisa dilakukan <= 1 kali cicilan.">
+                      <i class="fa-solid fa-lock text-[9px]"></i> Cicilan Ke-{{ req.pj_angsuran_ke }}
+                    </span>
+                    {% endif %}
+
+                    {% if (req.pj_angsuran_ke or 0) == 0 %}
                     <button type="button" 
                             onclick="openModalBatalkanSuperadmin(this)"
                             data-pinjamanid="{{ req.pinjaman_id_real }}"
@@ -398,6 +407,7 @@
                             title="Batalkan Persetujuan Pinjaman (Khusus Superadmin)">
                       <i class="fa-solid fa-undo text-[10px]"></i> Batal
                     </button>
+                    {% endif %}
                   </div>
                   {% elif req.jenis == 'PENARIKAN_SIMPANAN' %}
                   <button type="button" 
@@ -856,10 +866,10 @@
       </div>
 
       <!-- Warning Alert -->
-      <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2">
-        <i class="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>
+      <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
         <div>
-          <strong>Ketentuan Koreksi Superadmin:</strong> Seluruh nilai angsuran bulanan pokok, angsuran margin, biaya provisi, dan saldo pinjaman akan dihitung ulang secara otomatis berdasarkan parameter baru di bawah.
+          <strong>Ketentuan Koreksi Margin KOSITAS:</strong> Koreksi nilai margin hanya diperkenankan untuk pinjaman yang berjalan <strong>kurang dari sama dengan 1 kali cicilan (&le; 1x cicilan)</strong>. Apabila sudah memasuki cicilan ke-2 atau lebih, perhitungan margin terkunci secara permanen.
         </div>
       </div>
 
@@ -1340,6 +1350,11 @@
     const tenor = parseInt(btn.getAttribute('data-tenor') || 1);
     const marginPersen = parseFloat(btn.getAttribute('data-marginpersen') || 0);
     const angsuranKe = parseInt(btn.getAttribute('data-angsuranke') || 0);
+
+    if (angsuranKe > 1) {
+      alert(`Koreksi margin tidak bisa dilakukan! Pinjaman telah mencapai cicilan ke-${angsuranKe}. Sesuai kebijakan KOSITAS, koreksi perhitungan margin hanya diperbolehkan kurang dari sama dengan 1 kali cicilan.`);
+      return;
+    }
 
     currentKoreksiKategori = kategori;
 
