@@ -189,17 +189,22 @@
     </div>
   </div>
 
-  <!-- TABEL PENGAJUAN ONLINE ANGGOTA (PENDING & RIWAYAT DISETUJUI) -->
-  {% if pengajuan_pending or pengajuan_disetujui %}
-  <div class="bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden mb-6">
+  <!-- TABEL PENGAJUAN ONLINE ANGGOTA (PENDING & RIWAYAT DISETUJUI) - KHUSUS SUPERADMIN KETUA KOPERASI -->
+  {% if is_ketua_koperasi %}
+  <div id="menuVerifikasi" class="bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden mb-6">
     <!-- Header Card dengan Navigation Tabs -->
     <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center space-x-3">
         <span class="w-8 h-8 rounded-xl bg-white/10 text-amber-300 flex items-center justify-center text-sm border border-white/10 shadow-inner">
-          <i class="fa-solid fa-file-signature"></i>
+          <i class="fa-solid fa-stamp"></i>
         </span>
         <div>
-          <h3 class="text-sm font-bold">Pengajuan Mandiri Anggota Online</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold">Pengajuan Mandiri Anggota Online</h3>
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-400/30">
+              <i class="fa-solid fa-crown text-[9px] mr-1"></i>Khusus Ketua Koperasi
+            </span>
+          </div>
           <p class="text-[11px] text-slate-300">Verifikasi, Penetapan Nilai Margin, & Kontrol Koreksi Superadmin</p>
         </div>
       </div>
@@ -535,6 +540,7 @@
 <!-- ======================================================== -->
 <!-- MODAL PERTIMBANGAN MARGIN KETUA KOPERASI & APPROVAL PINJAMAN -->
 <!-- ======================================================== -->
+{% if is_ketua_koperasi %}
 <div id="modalApprovalPinjaman" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden transform transition-all my-8">
     
@@ -1069,6 +1075,7 @@
     </form>
   </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
@@ -1145,6 +1152,7 @@
     }
   });
 
+  {% if is_ketua_koperasi %}
   // --- JAVASCRIPT APPROVAL PENGAJUAN ONLINE & PERTIMBANGAN MARGIN KETUA KOPERASI ---
   let currentKategori = '';
 
@@ -1470,5 +1478,6 @@
   function closeModalBatalkanSuperadmin() {
     document.getElementById('modalBatalkanSuperadmin').classList.add('hidden');
   }
+  {% endif %}
 </script>
 {% endblock %}

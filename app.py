@@ -84,6 +84,21 @@ def get_current_user():
         return None
     return models.get_anggota_by_id(user_id)
 
+def is_ketua_koperasi_user(user):
+    """
+    Memeriksa apakah pengguna memiliki hak verifikasi pinjaman & pengajuan:
+    Wajib berstatus Superadmin DAN menjabat sebagai Ketua Koperasi.
+    """
+    if not user:
+        return False
+    if user.get('role') != 'superadmin':
+        return False
+    jab = (user.get('jabatan') or '').strip().lower()
+    # Harus memiliki jabatan sebagai Ketua Koperasi (bukan Ketua Badan Pemeriksa/Pengawas)
+    if 'pemeriksa' in jab or 'pengawas' in jab:
+        return False
+    return 'ketua' in jab
+
 @app.context_processor
 def inject_global_data():
     user = get_current_user()
@@ -92,6 +107,7 @@ def inject_global_data():
     local_ip = get_local_ip()
     return {
         'current_user': user,
+        'is_ketua_koperasi': is_ketua_koperasi_user(user),
         'current_year': now.year,
         'current_month': now.strftime('%Y-%m'),
         'all_active_members': all_members,
@@ -134,6 +150,19 @@ def superadmin_required(f):
             if user and user.get('role') == 'admin':
                 return redirect(url_for('admin_dashboard'))
             return redirect(url_for('anggota_dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def ketua_koperasi_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Silakan login terlebih dahulu.', 'warning')
+            return redirect(url_for('login'))
+        user = get_current_user()
+        if not is_ketua_koperasi_user(user):
+            flash('Akses ditolak! Menu verifikasi dan penetapan pinjaman hanya untuk Superadmin dengan jabatan Ketua Koperasi.', 'danger')
+            return redirect(url_for('admin_dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -888,9 +917,9 @@ def superadmin_manajemen_role():
         filter_role=filter_role
     )
 
-# --- APPROVAL PENGAJUAN ONLINE ANGGOTA ---
+# --- APPROVAL PENGAJUAN ONLINE ANGGOTA (KHUSUS SUPERADMIN KETUA KOPERASI) ---
 @app.route('/admin/pengajuan/<int:id>/proses', methods=['POST'])
-@admin_required
+@ketua_koperasi_required
 def admin_pengajuan_proses(id):
     action = request.form.get('action') # 'TERIMA' / 'TOLAK'
     catatan = request.form.get('catatan_admin', '').strip()

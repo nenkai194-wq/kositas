@@ -280,5 +280,47 @@ class TestApprovalMarginKetua(unittest.TestCase):
         conn.commit()
         conn.close()
 
+    def test_menu_verifikasi_hanya_untuk_superadmin_ketua_koperasi(self):
+        # 1. Ketua Koperasi (Gilang Abdul Aziz, id=7, role=superadmin, jabatan='Ketua Koperasi')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 7
+            sess['role'] = 'superadmin'
+        res_ketua = self.client.get('/admin/dashboard')
+        self.assertIn('menuVerifikasi', res_ketua.text)
+        self.assertIn('modalApprovalPinjaman', res_ketua.text)
+        self.assertIn('Verifikasi Pinjaman', res_ketua.text)
+
+        # 2. Admin Sekretaris (Darojatun, id=2, role=admin, jabatan='Sekretaris')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 2
+            sess['role'] = 'admin'
+        res_sekretaris = self.client.get('/admin/dashboard')
+        self.assertNotIn('menuVerifikasi', res_sekretaris.text)
+        self.assertNotIn('modalApprovalPinjaman', res_sekretaris.text)
+        self.assertNotIn('Verifikasi Pinjaman', res_sekretaris.text)
+
+        # Coba POST proses persetujuan oleh non-Ketua -> harus diblokir redirect 302
+        post_sekretaris = self.client.post('/admin/pengajuan/1/proses', data={'action': 'TERIMA'}, follow_redirects=False)
+        self.assertEqual(post_sekretaris.status_code, 302)
+
+        # 3. Superadmin non-Ketua (Administrator KOSITAS, id=999, role=superadmin, jabatan='Pengurus Koperasi')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 999
+            sess['role'] = 'superadmin'
+        res_sysadmin = self.client.get('/admin/dashboard')
+        self.assertNotIn('menuVerifikasi', res_sysadmin.text)
+        self.assertNotIn('modalApprovalPinjaman', res_sysadmin.text)
+
+        post_sysadmin = self.client.post('/admin/pengajuan/1/proses', data={'action': 'TERIMA'}, follow_redirects=False)
+        self.assertEqual(post_sysadmin.status_code, 302)
+
+        # 4. Admin Bendahara (Erlina Hardiyanti, id=19, role=admin, jabatan='Bendahara')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 19
+            sess['role'] = 'admin'
+        res_bendahara = self.client.get('/admin/dashboard')
+        self.assertNotIn('menuVerifikasi', res_bendahara.text)
+        self.assertNotIn('modalApprovalPinjaman', res_bendahara.text)
+
 if __name__ == '__main__':
     unittest.main()

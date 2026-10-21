@@ -151,6 +151,11 @@
             <a href="{{ url_for('admin_dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'admin_dashboard' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
               <i class="fa-solid fa-gauge-high mr-1.5 text-emerald-600"></i>Dashboard
             </a>
+            {% if is_ketua_koperasi %}
+            <a href="{{ url_for('admin_dashboard') }}#menuVerifikasi" class="px-3 py-2 rounded-lg text-sm font-semibold transition text-amber-800 hover:text-amber-900 hover:bg-amber-50">
+              <i class="fa-solid fa-stamp mr-1.5 text-amber-600"></i>Verifikasi Pinjaman
+            </a>
+            {% endif %}
             <a href="{{ url_for('admin_anggota_list') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if 'admin_anggota' in request.endpoint %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
               <i class="fa-solid fa-users mr-1.5 text-blue-600"></i>Anggota
             </a>
@@ -299,6 +304,11 @@
             <a href="{{ url_for('admin_dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'admin_dashboard' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
               <i class="fa-solid fa-gauge-high w-5 text-emerald-600"></i> Dashboard Admin
             </a>
+            {% if is_ketua_koperasi %}
+            <a href="{{ url_for('admin_dashboard') }}#menuVerifikasi" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition text-amber-900 bg-amber-50 hover:bg-amber-100">
+              <i class="fa-solid fa-stamp w-5 text-amber-600"></i> Verifikasi Pinjaman (Ketua)
+            </a>
+            {% endif %}
             <a href="{{ url_for('admin_anggota_list') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if 'admin_anggota' in request.endpoint %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
               <i class="fa-solid fa-users w-5 text-blue-600"></i> Data 38 Anggota
             </a>
