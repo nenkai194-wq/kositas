@@ -1218,30 +1218,210 @@ def get_rekap_bulanan_anggota(anggota_id):
     return history
 
 # ----------------- LAPORAN & KALKULASI SHU KOSITAS -----------------
-def hitung_shu_koperasi(total_shu_bruto=38706812.69):
-    """
-    Kalkulasi Pembagian SHU sesuai Anggaran Dasar KOSITAS (Halaman 13, 24, 25 RAT):
-    - Alokasi SHU Bruto:
-      * Dana Pendidikan: 2%
-      * Dana Rekreasi: 8%
-      * Dana Sosial: 6%
-      * Dana Cadangan: 6%
-      * Dana Resiko Kredit: 3%
-      * Dana Pensiun: 3%
-      * Insentif Pengurus & Pengawas: 32%
-      * SHU Bagian Anggota: 40% (50% Jasa Modal, 50% Jasa Pinjaman)
-    """
-    dana_pendidikan = round(total_shu_bruto * 0.02, 2)
-    dana_rekreasi = round(total_shu_bruto * 0.08, 2)
-    dana_sosial = round(total_shu_bruto * 0.06, 2)
-    dana_cadangan = round(total_shu_bruto * 0.06, 2)
-    dana_resiko_kredit = round(total_shu_bruto * 0.03, 2)
-    dana_pensiun = round(total_shu_bruto * 0.03, 2)
-    insentif_pengurus = round(total_shu_bruto * 0.32, 2)
-    shu_anggota = round(total_shu_bruto * 0.40, 2)
+def get_daftar_tahun_dana_shu():
+    """Mengambil daftar tahun buku yang memiliki konfigurasi alokasi dana SHU."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT tahun FROM alokasi_dana_shu ORDER BY tahun DESC")
+    rows = [r[0] for r in cursor.fetchall()]
+    conn.close()
+    if not rows:
+        return [2026, 2025]
+    return rows
 
-    jasa_modal_total = round(shu_anggota * 0.50, 2)
-    jasa_pinjaman_total = round(shu_anggota * 0.50, 2)
+def get_alokasi_dana_shu(tahun=None):
+    """Mengambil rincian alokasi dana SHU sesuai tahun buku hasil keputusan RAT."""
+    conn = get_db()
+    cursor = conn.cursor()
+    if tahun is None:
+        cursor.execute("SELECT MAX(tahun) FROM alokasi_dana_shu")
+        res = cursor.fetchone()
+        tahun = res[0] if res and res[0] else 2026
+    
+    cursor.execute("""
+    SELECT * FROM alokasi_dana_shu
+    WHERE tahun = ?
+    ORDER BY urutan ASC, id ASC
+    """, (tahun,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+def get_dana_shu_by_id(dana_id):
+    """Mengambil data satu alokasi dana berdasarkan ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM alokasi_dana_shu WHERE id = ?", (dana_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def tambah_dana_shu(data):
+    """Menambahkan alokasi dana SHU baru untuk tahun buku tertentu."""
+    conn = get_db()
+    cursor = conn.cursor()
+    tahun = int(data.get('tahun', 2026))
+    nama_dana = data.get('nama_dana', '').strip()
+    persentase = float(data.get('persentase', 0.0) or 0.0)
+    kategori = data.get('kategori', 'DANA')
+    is_bagian_anggota = 1 if (data.get('is_bagian_anggota') in [1, '1', True, 'true'] or kategori == 'ANGGOTA') else 0
+    porsi_jasa_modal = float(data.get('porsi_jasa_modal', 50.0) or 50.0)
+    porsi_jasa_pinjaman = float(data.get('porsi_jasa_pinjaman', 50.0) or 50.0)
+    keterangan = data.get('keterangan', '').strip()
+    warna_badge = data.get('warna_badge', 'slate').strip() or 'slate'
+    urutan = int(data.get('urutan', 99) or 99)
+
+    cursor.execute("""
+    INSERT INTO alokasi_dana_shu 
+    (tahun, nama_dana, persentase, kategori, is_bagian_anggota, porsi_jasa_modal, porsi_jasa_pinjaman, keterangan, warna_badge, urutan)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (tahun, nama_dana, persentase, kategori, is_bagian_anggota, porsi_jasa_modal, porsi_jasa_pinjaman, keterangan, warna_badge, urutan))
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return new_id
+
+def update_dana_shu(dana_id, data):
+    """Memperbarui alokasi dana SHU (nama, persentase, porsi pembagian, dll)."""
+    conn = get_db()
+    cursor = conn.cursor()
+    tahun = int(data.get('tahun', 2026))
+    nama_dana = data.get('nama_dana', '').strip()
+    persentase = float(data.get('persentase', 0.0) or 0.0)
+    kategori = data.get('kategori', 'DANA')
+    is_bagian_anggota = 1 if (data.get('is_bagian_anggota') in [1, '1', True, 'true'] or kategori == 'ANGGOTA') else 0
+    porsi_jasa_modal = float(data.get('porsi_jasa_modal', 50.0) or 50.0)
+    porsi_jasa_pinjaman = float(data.get('porsi_jasa_pinjaman', 50.0) or 50.0)
+    keterangan = data.get('keterangan', '').strip()
+    warna_badge = data.get('warna_badge', 'slate').strip() or 'slate'
+    urutan = int(data.get('urutan', 99) or 99)
+
+    cursor.execute("""
+    UPDATE alokasi_dana_shu
+    SET tahun = ?, nama_dana = ?, persentase = ?, kategori = ?, is_bagian_anggota = ?,
+        porsi_jasa_modal = ?, porsi_jasa_pinjaman = ?, keterangan = ?, warna_badge = ?, urutan = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+    """, (tahun, nama_dana, persentase, kategori, is_bagian_anggota, porsi_jasa_modal, porsi_jasa_pinjaman, keterangan, warna_badge, urutan, dana_id))
+    conn.commit()
+    conn.close()
+    return True
+
+def hapus_dana_shu(dana_id):
+    """Menghapus alokasi dana SHU berdasarkan ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM alokasi_dana_shu WHERE id = ?", (dana_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+def salin_alokasi_dana_tahun(tahun_asal, tahun_tujuan):
+    """Menyalin konfigurasi dana SHU dari tahun buku sebelumnya ke tahun buku baru."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM alokasi_dana_shu WHERE tahun = ? ORDER BY urutan ASC, id ASC", (tahun_asal,))
+    rows = cursor.fetchall()
+    if not rows:
+        conn.close()
+        return False, f"Tidak ada data alokasi dana untuk tahun {tahun_asal}"
+    
+    # Hapus data tahun tujuan jika sudah ada
+    cursor.execute("DELETE FROM alokasi_dana_shu WHERE tahun = ?", (tahun_tujuan,))
+    count = 0
+    for r in rows:
+        cursor.execute("""
+        INSERT INTO alokasi_dana_shu 
+        (tahun, nama_dana, persentase, kategori, is_bagian_anggota, porsi_jasa_modal, porsi_jasa_pinjaman, keterangan, warna_badge, urutan)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (tahun_tujuan, r['nama_dana'], r['persentase'], r['kategori'], r['is_bagian_anggota'], r['porsi_jasa_modal'], r['porsi_jasa_pinjaman'], r['keterangan'], r['warna_badge'], r['urutan']))
+        count += 1
+    conn.commit()
+    conn.close()
+    return True, f"Berhasil menyalin {count} alokasi dana dari tahun {tahun_asal} ke tahun {tahun_tujuan}"
+
+def update_user_role(anggota_id, new_role):
+    """Memperbarui level role anggota (superadmin, admin, anggota)."""
+    if new_role not in ['superadmin', 'admin', 'anggota']:
+        return False, "Role tidak valid!"
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE anggota SET role = ? WHERE id = ?", (new_role, anggota_id))
+    conn.commit()
+    conn.close()
+    return True, f"Role berhasil diperbarui menjadi {new_role}"
+
+def get_user_roles_stats():
+    """Mengambil statistik jumlah pengguna berdasarkan role."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT role, COUNT(*) FROM anggota GROUP BY role")
+    stats = {r[0]: r[1] for r in cursor.fetchall()}
+    conn.close()
+    return stats
+
+def hitung_shu_koperasi(total_shu_bruto=38706812.69, tahun=None):
+    """
+    Kalkulasi Pembagian SHU dinamis berdasarkan kesepakatan RAT KOSITAS per tahun buku.
+    Mengambil komposisi alokasi dari tabel alokasi_dana_shu.
+    """
+    if tahun is None:
+        tahun = 2026
+    try:
+        tahun = int(tahun)
+    except (ValueError, TypeError):
+        tahun = 2026
+
+    dana_list = get_alokasi_dana_shu(tahun)
+    if not dana_list:
+        # Fallback ke tahun 2025 jika tahun yang dipilih belum ada
+        dana_list = get_alokasi_dana_shu(2025)
+    
+    total_persen = 0.0
+    shu_anggota_total = 0.0
+    jasa_modal_total = 0.0
+    jasa_pinjaman_total = 0.0
+    total_alokasi_lembaga = 0.0
+    alokasi_dict = {}
+
+    for d in dana_list:
+        persen = float(d['persentase'])
+        total_persen += persen
+        nom = round(total_shu_bruto * (persen / 100.0), 2)
+        d['nominal'] = nom
+
+        # Slugify key untuk backward compatibility di template yang memanggil alokasi.*
+        clean_name = d['nama_dana'].lower()
+        if 'pendidikan' in clean_name:
+            alokasi_dict['dana_pendidikan'] = nom
+        elif 'rekreasi' in clean_name:
+            alokasi_dict['dana_rekreasi'] = nom
+        elif 'sosial' in clean_name:
+            alokasi_dict['dana_sosial'] = nom
+        elif 'cadangan' in clean_name:
+            alokasi_dict['dana_cadangan'] = nom
+        elif 'risiko' in clean_name or 'resiko' in clean_name:
+            alokasi_dict['dana_resiko_kredit'] = nom
+        elif 'pensiun' in clean_name:
+            alokasi_dict['dana_pensiun'] = nom
+        elif 'pengurus' in clean_name:
+            alokasi_dict['insentif_pengurus'] = nom
+
+        if d.get('is_bagian_anggota') == 1:
+            shu_anggota_total = nom
+            p_modal = float(d.get('porsi_jasa_modal') or 50.0)
+            p_pinj = float(d.get('porsi_jasa_pinjaman') or 50.0)
+            jasa_modal_total = round(nom * (p_modal / 100.0), 2)
+            jasa_pinjaman_total = round(nom * (p_pinj / 100.0), 2)
+            d['jasa_modal_nominal'] = jasa_modal_total
+            d['jasa_pinjaman_nominal'] = jasa_pinjaman_total
+        else:
+            total_alokasi_lembaga += nom
+
+    # Simpan fallback nilai standar jika belum terisi
+    alokasi_dict['shu_bagian_anggota'] = shu_anggota_total
+    alokasi_dict['jasa_modal_total'] = jasa_modal_total
+    alokasi_dict['jasa_pinjaman_total'] = jasa_pinjaman_total
 
     # Ambil rincian seluruh anggota
     members = get_all_anggota(status_filter='Semua')
@@ -1283,18 +1463,12 @@ def hitung_shu_koperasi(total_shu_bruto=38706812.69):
 
     return {
         'total_shu_bruto': total_shu_bruto,
-        'alokasi': {
-            'dana_pendidikan': dana_pendidikan,
-            'dana_rekreasi': dana_rekreasi,
-            'dana_sosial': dana_sosial,
-            'dana_cadangan': dana_cadangan,
-            'dana_resiko_kredit': dana_resiko_kredit,
-            'dana_pensiun': dana_pensiun,
-            'insentif_pengurus': insentif_pengurus,
-            'shu_bagian_anggota': shu_anggota,
-            'jasa_modal_total': jasa_modal_total,
-            'jasa_pinjaman_total': jasa_pinjaman_total
-        },
+        'tahun': tahun,
+        'dana_list': dana_list,
+        'total_persentase': round(total_persen, 2),
+        'is_valid_100': abs(round(total_persen, 2) - 100.0) < 0.01,
+        'total_alokasi_lembaga': total_alokasi_lembaga,
+        'alokasi': alokasi_dict,
         'total_simpanan_koperasi': total_simpanan_koperasi,
         'total_jasa_koperasi': total_jasa_koperasi,
         'rincian_anggota': rincian_anggota,
@@ -1354,8 +1528,8 @@ def hitung_estimasi_shu_anggota(anggota_id, tahun=None, bulan_ke=None, total_shu
     if not member:
         return None
 
-    # Kalkulasi SHU global koperasi
-    shu_global = hitung_shu_koperasi(total_shu_bruto=total_shu_bruto)
+    # Kalkulasi SHU global koperasi berdasarkan konfigurasi tahun buku
+    shu_global = hitung_shu_koperasi(total_shu_bruto=total_shu_bruto, tahun=thn)
     rincian_member = next((r for r in shu_global['rincian_anggota'] if r['anggota_id'] == anggota_id), None)
 
     if not rincian_member:

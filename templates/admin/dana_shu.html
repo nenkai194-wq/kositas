@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+
+{% block title %}Pengaturan & Monitoring Alokasi Dana SHU RAT - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <h1 class="text-2xl font-extrabold text-slate-900">Alokasi & Monitoring Dana SHU (RAT)</h1>
+        {% if is_superadmin %}
+          <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-crown text-amber-600"></i> Level Superadmin (Kelola Penuh)
+          </span>
+        {% else %}
+          <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-100 text-indigo-900 border border-indigo-200 inline-flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-eye text-indigo-600"></i> Level Admin (Mode Monitoring)
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Pengaturan dinamis persentase dana-dana koperasi dan porsi anggota berdasarkan kesepakatan Rapat Anggota Tahunan (RAT) per tahun buku.
+      </p>
+    </div>
+
+    <!-- Superadmin Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2 no-print">
+      {% if is_superadmin %}
+        <button type="button" onclick="openModalTambah()" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-emerald-700/20">
+          <i class="fa-solid fa-plus-circle"></i> Tambah Dana Baru
+        </button>
+        <button type="button" onclick="openModalSalin()" class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-copy text-amber-600"></i> Salin Pengaturan Tahun
+        </button>
+      {% endif %}
+      <a href="{{ url_for('admin_laporan_shu', tahun=tahun) }}" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-table-list text-indigo-600"></i> Lihat Laporan SHU
+      </a>
+    </div>
+  </div>
+
+  <!-- Role Notice for Operational Admin -->
+  {% if not is_superadmin %}
+  <div class="p-4 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-start gap-3 text-xs text-indigo-950">
+    <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+    <div class="space-y-0.5">
+      <div class="font-extrabold text-sm text-indigo-900">Hak Akses Admin: Mode Pemantauan (Read-Only)</div>
+      <p class="text-indigo-800 leading-relaxed">
+        Anda memiliki hak akses untuk memonitor komposisi alokasi dana dan simulasi nominal pembagian SHU. Perubahan persentase kesepakatan RAT (tambah, ubah persentase, atau hapus dana) merupakan wewenang tingkat pengambil keputusan tertinggi yang dipegang oleh <strong>Superadmin (Ketua Koperasi / SysAdmin)</strong>.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- FILTER TAHUN BUKU & SIMULATOR SHU BRUTO -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+    <form method="GET" class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow max-w-2xl">
+        <!-- Pilihan Tahun Buku -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days text-emerald-600"></i> Tahun Buku RAT
+          </label>
+          <select name="tahun" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            {% for th in daftar_tahun %}
+              <option value="{{ th }}" {% if th == tahun %}selected{% endif %}>
+                Tahun Buku {{ th }} {% if th == 2025 %}(Laporan RAT Terakhir){% elif th == 2026 %}(Tahun Berjalan){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Input SHU Bruto Koperasi -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-money-bill-wave text-amber-500"></i> Total SHU Bruto Koperasi (Rp)
+          </label>
+          <input type="number" name="total_shu" value="{{ total_shu }}" step="1000" min="0" 
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="submit" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-calculator"></i> Kalkulasi Alokasi
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- STATUS MONITORING PERSENTASE (KOMPOSISI 100%) -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div>
+        <h2 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-gauge text-teal-600"></i>
+          Monitoring Akumulasi Persentase Alokasi (Tahun {{ tahun }})
+        </h2>
+        <p class="text-xs text-slate-500">Total pembagian dana dari SHU Bruto wajib tepat 100.0% sesuai AD/ART</p>
+      </div>
+
+      <div>
+        {% if shu.is_valid_100 %}
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-extrabold text-emerald-800">
+            <i class="fa-solid fa-circle-check text-emerald-600"></i>
+            Total Alokasi Sesuai Standar: 100.0%
+          </div>
+        {% elif shu.total_persentase < 100.0 %}
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-300 rounded-xl text-xs font-extrabold text-amber-800">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+            Alokasi Belum Lengkap: {{ shu.total_persentase }}% (Kurang {{ (100.0 - shu.total_persentase)|round(2) }}%)
+          </div>
+        {% else %}
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-300 rounded-xl text-xs font-extrabold text-red-800">
+            <i class="fa-solid fa-circle-exclamation text-red-600"></i>
+            Alokasi Melebihi Batas: {{ shu.total_persentase }}% (Kelebihan {{ (shu.total_persentase - 100.0)|round(2) }}%)
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Visual Progress Bar -->
+    <div class="space-y-1.5">
+      <div class="flex justify-between text-xs font-mono font-bold">
+        <span class="text-slate-500">Progress Alokasi Dana:</span>
+        <span class="{% if shu.is_valid_100 %}text-emerald-700{% elif shu.total_persentase < 100 %}text-amber-600{% else %}text-red-600{% endif %}">
+          {{ shu.total_persentase }}% / 100.0%
+        </span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden flex shadow-inner">
+        {% for d in shu.dana_list %}
+          <div class="h-full transition-all duration-500 relative group cursor-pointer
+                      {% if d.is_bagian_anggota %}bg-indigo-600{% elif loop.index % 6 == 1 %}bg-cyan-500{% elif loop.index % 6 == 2 %}bg-emerald-500{% elif loop.index % 6 == 3 %}bg-rose-500{% elif loop.index % 6 == 4 %}bg-amber-500{% elif loop.index % 6 == 5 %}bg-orange-500{% else %}bg-purple-500{% endif %}"
+               style="width: {{ d.persentase }}%;"
+               title="{{ d.nama_dana }}: {{ d.persentase }}% ({{ d.nominal|rupiah }})">
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS: DANA LEMBAGA VS BAGIAN ANGGOTA -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <!-- Total SHU Bruto -->
+      <div class="p-4 bg-slate-900 text-white rounded-2xl shadow-sm">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Basis SHU Bruto (100%)</span>
+        <div class="text-xl font-extrabold text-white mt-1 font-mono">{{ shu.total_shu_bruto|rupiah }}</div>
+        <div class="text-[11px] text-slate-300 mt-0.5">Tahun Buku {{ tahun }}</div>
+      </div>
+
+      <!-- Alokasi Dana Lembaga / Pengurus -->
+      <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl shadow-sm">
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Dana Koperasi & Pengurus</span>
+          <span class="text-xs font-mono font-extrabold text-amber-900">{{ (shu.total_persentase - (shu.alokasi.shu_bagian_anggota / shu.total_shu_bruto * 100.0 if shu.total_shu_bruto > 0 else 0))|round(1) }}%</span>
+        </div>
+        <div class="text-xl font-extrabold text-amber-950 mt-1 font-mono">{{ shu.total_alokasi_lembaga|rupiah }}</div>
+        <div class="text-[11px] text-amber-700 mt-0.5">Pendidikan, Rekreasi, Sosial, Cadangan, Risiko, Pensiun, Insentif</div>
+      </div>
+
+      <!-- Total Bagian Anggota -->
+      <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm">
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block">SHU Bagian Anggota</span>
+          <span class="text-xs font-mono font-extrabold text-indigo-900">{{ (shu.alokasi.shu_bagian_anggota / shu.total_shu_bruto * 100.0 if shu.total_shu_bruto > 0 else 0)|round(1) }}%</span>
+        </div>
+        <div class="text-xl font-extrabold text-indigo-950 mt-1 font-mono">{{ shu.alokasi.shu_bagian_anggota|rupiah }}</div>
+        <div class="text-[11px] text-indigo-700 mt-0.5">
+          Jasa Modal: {{ shu.alokasi.jasa_modal_total|rupiah }} • Jasa Pinjaman: {{ shu.alokasi.jasa_pinjaman_total|rupiah }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABEL RINCIAN DANA-DANA SHU DENGAN AKSI CRUD -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-600"></i>
+          Daftar Rincian Dana-Dana SHU (Hasil Kesepakatan RAT Tahun {{ tahun }})
+        </h3>
+        <p class="text-xs text-slate-500">Rincian nama pos dana, persentase alokasi, estimasi nominal rupiah, serta hak akses pengelolaan</p>
+      </div>
+
+      <div class="text-xs text-slate-500 font-medium">
+        Total: <strong class="text-slate-800">{{ shu.dana_list|length }} Pos Alokasi</strong>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left border-collapse">
+        <thead class="bg-slate-50 text-slate-700 uppercase font-extrabold border-b border-slate-200 text-[11px]">
+          <tr>
+            <th class="py-3 px-4 text-center w-12">No</th>
+            <th class="py-3 px-4">Nama Pos Alokasi</th>
+            <th class="py-3 px-4 text-center">Kategori</th>
+            <th class="py-3 px-4 text-right">Persentase</th>
+            <th class="py-3 px-4 text-right">Estimasi Nominal (Rp)</th>
+            <th class="py-3 px-4">Keterangan / Aturan AD-ART</th>
+            <th class="py-3 px-4 text-center w-28 no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for d in shu.dana_list %}
+          <tr class="hover:bg-slate-50/80 transition {% if d.is_bagian_anggota %}bg-indigo-50/30{% endif %}">
+            <td class="py-3.5 px-4 text-center font-bold text-slate-500">{{ loop.index }}</td>
+            <td class="py-3.5 px-4 font-bold text-slate-900">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full 
+                      {% if d.is_bagian_anggota %}bg-indigo-600{% elif loop.index % 6 == 1 %}bg-cyan-500{% elif loop.index % 6 == 2 %}bg-emerald-500{% elif loop.index % 6 == 3 %}bg-rose-500{% elif loop.index % 6 == 4 %}bg-amber-500{% elif loop.index % 6 == 5 %}bg-orange-500{% else %}bg-purple-500{% endif %}">
+                </span>
+                <span>{{ d.nama_dana }}</span>
+              </div>
+              {% if d.is_bagian_anggota %}
+                <div class="text-[10px] text-indigo-700 font-semibold mt-1 pl-4.5">
+                  ↳ Porsi: Jasa Modal {{ d.porsi_jasa_modal }}% & Jasa Pinjaman {{ d.porsi_jasa_pinjaman }}%
+                </div>
+              {% endif %}
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              {% if d.is_bagian_anggota %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  Bagian Anggota
+                </span>
+              {% else %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  Dana Lembaga
+                </span>
+              {% endif %}
+            </td>
+            <td class="py-3.5 px-4 text-right font-mono font-extrabold text-slate-800 text-sm">
+              {{ d.persentase }}%
+            </td>
+            <td class="py-3.5 px-4 text-right font-mono font-extrabold {% if d.is_bagian_anggota %}text-indigo-800{% else %}text-emerald-800{% endif %} text-sm">
+              {{ d.nominal|rupiah }}
+            </td>
+            <td class="py-3.5 px-4 text-slate-500 text-[11px] max-w-xs truncate" title="{{ d.keterangan }}">
+              {{ d.keterangan or '-' }}
+            </td>
+            <td class="py-3.5 px-4 text-center no-print">
+              {% if is_superadmin %}
+                <div class="flex items-center justify-center gap-1.5">
+                  <button type="button" 
+                          onclick='openModalEdit({{ d|tojson }})'
+                          class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition border border-amber-200" 
+                          title="Edit Alokasi Dana">
+                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                  </button>
+                  <button type="button" 
+                          onclick="openModalHapus({{ d.id }}, '{{ d.nama_dana }}', {{ d.persentase }})" 
+                          class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition border border-red-200" 
+                          title="Hapus Alokasi Dana">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
+              {% else %}
+                <span class="text-[10px] text-slate-400 italic" title="Hanya Superadmin yang berwenang mengubah kesepakatan RAT">
+                  <i class="fa-solid fa-lock text-[10px] mr-1"></i>Terkunci
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-slate-100/80 font-bold border-t border-slate-200 text-slate-900">
+          <tr>
+            <td colspan="3" class="py-3 px-4 text-right font-bold uppercase text-[11px]">Total Alokasi Keseluruhan:</td>
+            <td class="py-3 px-4 text-right font-mono text-sm {% if shu.is_valid_100 %}text-emerald-800{% else %}text-red-600{% endif %}">
+              {{ shu.total_persentase }}%
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-sm text-slate-900">
+              {{ shu.total_shu_bruto|rupiah }}
+            </td>
+            <td colspan="2" class="py-3 px-4 text-xs text-slate-500">
+              {% if shu.is_valid_100 %}
+                <span class="text-emerald-700 font-semibold">✓ Tepat 100% Sesuai AD/ART</span>
+              {% else %}
+                <span class="text-red-600 font-semibold">⚠ Belum 100%</span>
+              {% endif %}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== MODALS (SUPERADMIN ONLY) ==================== -->
+{% if is_superadmin %}
+
+<!-- 1. MODAL TAMBAH DANA BARU -->
+<div id="modalTambahDana" class="hidden fixed inset-0 z-50 overflow-y-auto no-print">
+  <div onclick="closeModalTambah()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-sm">
+            <i class="fa-solid fa-plus-circle"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900">Tambah Alokasi Dana SHU Baru</h3>
+            <p class="text-[11px] text-slate-500">Tambahkan pos dana baru untuk Tahun Buku {{ tahun }}</p>
+          </div>
+        </div>
+        <button onclick="closeModalTambah()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form method="POST" action="{{ url_for('superadmin_dana_shu_tambah') }}" class="space-y-4">
+        <input type="hidden" name="tahun" value="{{ tahun }}">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nama Pos Alokasi Dana <span class="text-red-500">*</span></label>
+          <input type="text" name="nama_dana" required placeholder="Contoh: Dana Pengembangan Teknologi / CSR" 
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Persentase (%) <span class="text-red-500">*</span></label>
+            <input type="number" name="persentase" required step="0.01" min="0.01" max="100" placeholder="Contoh: 5.0" 
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kategori Alokasi</label>
+            <select name="kategori" id="tambahKategori" onchange="togglePorsiAnggota('tambah')" 
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+              <option value="DANA">Dana Lembaga / Pengurus</option>
+              <option value="ANGGOTA">SHU Bagian Anggota</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Opsi Tambahan untuk Bagian Anggota -->
+        <div id="tambahBoxPorsiAnggota" class="hidden p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+          <span class="text-[11px] font-bold text-indigo-900 block">Porsi Pembagian Anggota (Wajib 100%):</span>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-1">Jasa Modal (%)</label>
+              <input type="number" name="porsi_jasa_modal" value="50" step="1" min="0" max="100" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-1">Jasa Pinjaman (%)</label>
+              <input type="number" name="porsi_jasa_pinjaman" value="50" step="1" min="0" max="100" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Urutan Tampilan</label>
+            <input type="number" name="urutan" value="10" min="1" max="99" 
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Warna Badge</label>
+            <select name="warna_badge" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+              <option value="slate">Abu-abu (Slate)</option>
+              <option value="emerald">Hijau (Emerald)</option>
+              <option value="blue">Biru (Blue)</option>
+              <option value="indigo">Indigo</option>
+              <option value="purple">Ungu (Purple)</option>
+              <option value="amber">Kuning (Amber)</option>
+              <option value="rose">Merah Muda (Rose)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Keputusan RAT</label>
+          <textarea name="keterangan" rows="2" placeholder="Catatan tujuan dana atau dasar hukum AD/ART..." 
+                    class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" onclick="closeModalTambah()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-save"></i> Simpan Alokasi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 2. MODAL EDIT DANA -->
+<div id="modalEditDana" class="hidden fixed inset-0 z-50 overflow-y-auto no-print">
+  <div onclick="closeModalEdit()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900">Ubah Alokasi Dana SHU</h3>
+            <p class="text-[11px] text-slate-500">Sesuaikan persentase atau aturan pembagian dana</p>
+          </div>
+        </div>
+        <button onclick="closeModalEdit()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="formEditDana" method="POST" class="space-y-4">
+        <input type="hidden" name="tahun" value="{{ tahun }}">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nama Pos Alokasi Dana <span class="text-red-500">*</span></label>
+          <input type="text" name="nama_dana" id="editNamaDana" required 
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Persentase (%) <span class="text-red-500">*</span></label>
+            <input type="number" name="persentase" id="editPersentase" required step="0.01" min="0.01" max="100" 
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kategori Alokasi</label>
+            <select name="kategori" id="editKategori" onchange="togglePorsiAnggota('edit')" 
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+              <option value="DANA">Dana Lembaga / Pengurus</option>
+              <option value="ANGGOTA">SHU Bagian Anggota</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="editBoxPorsiAnggota" class="hidden p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+          <span class="text-[11px] font-bold text-indigo-900 block">Porsi Pembagian Anggota (Wajib 100%):</span>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-1">Jasa Modal (%)</label>
+              <input type="number" name="porsi_jasa_modal" id="editPorsiModal" step="1" min="0" max="100" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-1">Jasa Pinjaman (%)</label>
+              <input type="number" name="porsi_jasa_pinjaman" id="editPorsiPinj" step="1" min="0" max="100" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Urutan Tampilan</label>
+            <input type="number" name="urutan" id="editUrutan" min="1" max="99" 
+                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Warna Badge</label>
+            <select name="warna_badge" id="editWarnaBadge" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+              <option value="slate">Abu-abu (Slate)</option>
+              <option value="emerald">Hijau (Emerald)</option>
+              <option value="blue">Biru (Blue)</option>
+              <option value="indigo">Indigo</option>
+              <option value="purple">Ungu (Purple)</option>
+              <option value="amber">Kuning (Amber)</option>
+              <option value="rose">Merah Muda (Rose)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Keputusan RAT</label>
+          <textarea name="keterangan" id="editKeterangan" rows="2" 
+                    class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" onclick="closeModalEdit()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-save"></i> Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 3. MODAL SALIN TAHUN -->
+<div id="modalSalinTahun" class="hidden fixed inset-0 z-50 overflow-y-auto no-print">
+  <div onclick="closeModalSalin()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm">
+            <i class="fa-solid fa-copy"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900">Salin Pengaturan Alokasi Dana</h3>
+            <p class="text-[11px] text-slate-500">Duplikasi seluruh pos dana ke tahun buku baru</p>
+          </div>
+        </div>
+        <button onclick="closeModalSalin()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form method="POST" action="{{ url_for('superadmin_dana_shu_salin') }}" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tahun Asal (Sumber Data)</label>
+          <select name="tahun_asal" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+            {% for th in daftar_tahun %}
+              <option value="{{ th }}" {% if th == tahun %}selected{% endif %}>Tahun Buku {{ th }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tahun Tujuan Baru <span class="text-red-500">*</span></label>
+          <input type="number" name="tahun_tujuan" value="{{ tahun + 1 }}" min="2020" max="2050" required 
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono">
+          <p class="text-[10px] text-slate-400 mt-1">*Jika tahun tujuan sudah memiliki data, seluruh pos dana tahun tersebut akan ditimpa dengan data baru.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" onclick="closeModalSalin()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-clone"></i> Salin Pengaturan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 4. MODAL HAPUS KONFIRMASI -->
+<div id="modalHapusDana" class="hidden fixed inset-0 z-50 overflow-y-auto no-print">
+  <div onclick="closeModalHapus()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h3 class="text-base font-extrabold text-slate-900">Hapus Pos Alokasi Dana?</h3>
+        <p class="text-xs text-slate-500 mt-1">
+          Anda akan menghapus pos alokasi <strong id="hapusNamaDana" class="text-slate-800"></strong> (<span id="hapusPersen" class="font-mono font-bold text-red-600"></span>%) dari Tahun Buku {{ tahun }}.
+        </p>
+      </div>
+
+      <form id="formHapusDana" method="POST" class="pt-2 flex items-center justify-center gap-2.5">
+        <input type="hidden" name="tahun" value="{{ tahun }}">
+        <button type="button" onclick="closeModalHapus()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Batal
+        </button>
+        <button type="submit" class="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow transition">
+          Ya, Hapus
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModalTambah() {
+  document.getElementById('modalTambahDana').classList.remove('hidden');
+}
+function closeModalTambah() {
+  document.getElementById('modalTambahDana').classList.add('hidden');
+}
+
+function openModalEdit(dana) {
+  document.getElementById('formEditDana').action = '/superadmin/dana-shu/edit/' + dana.id;
+  document.getElementById('editNamaDana').value = dana.nama_dana;
+  document.getElementById('editPersentase').value = dana.persentase;
+  document.getElementById('editKategori').value = dana.is_bagian_anggota ? 'ANGGOTA' : 'DANA';
+  document.getElementById('editPorsiModal').value = dana.porsi_jasa_modal || 50;
+  document.getElementById('editPorsiPinj').value = dana.porsi_jasa_pinjaman || 50;
+  document.getElementById('editUrutan').value = dana.urutan || 1;
+  document.getElementById('editWarnaBadge').value = dana.warna_badge || 'slate';
+  document.getElementById('editKeterangan').value = dana.keterangan || '';
+  
+  togglePorsiAnggota('edit');
+  document.getElementById('modalEditDana').classList.remove('hidden');
+}
+function closeModalEdit() {
+  document.getElementById('modalEditDana').classList.add('hidden');
+}
+
+function openModalSalin() {
+  document.getElementById('modalSalinTahun').classList.remove('hidden');
+}
+function closeModalSalin() {
+  document.getElementById('modalSalinTahun').classList.add('hidden');
+}
+
+function openModalHapus(id, nama, persen) {
+  document.getElementById('formHapusDana').action = '/superadmin/dana-shu/hapus/' + id;
+  document.getElementById('hapusNamaDana').innerText = nama;
+  document.getElementById('hapusPersen').innerText = persen;
+  document.getElementById('modalHapusDana').classList.remove('hidden');
+}
+function closeModalHapus() {
+  document.getElementById('modalHapusDana').classList.add('hidden');
+}
+
+function togglePorsiAnggota(prefix) {
+  const kat = document.getElementById(prefix + 'Kategori').value;
+  const box = document.getElementById(prefix + 'BoxPorsiAnggota');
+  if (kat === 'ANGGOTA') {
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+  }
+}
+</script>
+{% endif %}
+
+{% endblock %}

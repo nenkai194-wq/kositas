@@ -15,10 +15,10 @@ def run_seed():
     cursor.execute("DELETE FROM billing_bulanan_log")
     cursor.execute("DELETE FROM anggota")
 
-    # Insert Special Admin User (Pengurus KOSITAS)
+    # Insert Special Admin User (Pengurus KOSITAS - Superadmin)
     cursor.execute('''
     INSERT INTO anggota (id, no_anggota, nama, nip, jabatan, jenis_kelamin, no_hp, email, alamat, tanggal_masuk, status, password, role)
-    VALUES (999, 'ADM-001', 'Administrator KOSITAS', '198501012010011001', 'Pengurus Koperasi', 'Pria', '081234567890', 'admin@kositas.bps.go.id', 'Kantor BPS Singaparna', '2024-01-01', 'Aktif', 'admin', 'admin')
+    VALUES (999, 'ADM-001', 'Administrator KOSITAS', '198501012010011001', 'Pengurus Koperasi', 'Pria', '081234567890', 'admin@kositas.bps.go.id', 'Kantor BPS Singaparna', '2024-01-01', 'Aktif', 'admin', 'superadmin')
     ''')
 
     # Data 38 Anggota Real KOSITAS dari Laporan RAT 2025
@@ -67,7 +67,8 @@ def run_seed():
     for item in raw_members:
         no_urut, nama, jabatan, jk, status, sp_pokok, sp_wajib, sp_manasuka, sp_lebaran, sp_qurban, pj_japan, pj_japen, pj_bon, pj_barang, jasa_bayar = item
         no_agt = f"KST-{no_urut:03d}"
-        role = 'admin' if no_urut in [2, 7, 19] else 'anggota' # Ketua, Sekretaris, Bendahara have admin rights
+        # Hak akses: Ketua (7) -> superadmin, Sekretaris (2) & Bendahara (19) -> admin, Lainnya -> anggota
+        role = 'superadmin' if no_urut == 7 else ('admin' if no_urut in [2, 19] else 'anggota')
         nip = f"19{75 + (no_urut % 20):02d}{(no_urut % 12) + 1:02d}15200501{1 if jk == 'Pria' else 2}{no_urut:03d}"
         hp = f"0812{no_urut:04d}{2345 + no_urut}"
         email = f"{nama.split()[0].lower()}@bps.go.id"

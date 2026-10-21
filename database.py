@@ -168,6 +168,50 @@ def init_db():
     )
     ''')
 
+    # Table Alokasi Dana-Dana SHU (Konfigurasi Fleksibel per Tahun Buku Hasil RAT)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS alokasi_dana_shu (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tahun INTEGER NOT NULL,
+        nama_dana TEXT NOT NULL,
+        persentase REAL NOT NULL,
+        kategori TEXT DEFAULT 'DANA', -- 'DANA' (Dana Lembaga/Pengurus) atau 'ANGGOTA' (Bagian Anggota)
+        is_bagian_anggota INTEGER DEFAULT 0, -- 1 jika ini porsi untuk anggota (Jasa Modal & Pinjaman)
+        porsi_jasa_modal REAL DEFAULT 50.0,
+        porsi_jasa_pinjaman REAL DEFAULT 50.0,
+        keterangan TEXT,
+        warna_badge TEXT DEFAULT 'slate',
+        urutan INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    # Seed alokasi dana SHU default jika kosong
+    cursor.execute("SELECT COUNT(*) FROM alokasi_dana_shu")
+    if cursor.fetchone()[0] == 0:
+        default_funds_template = [
+            ("Dana Pendidikan", 2.0, "DANA", 0, 0.0, 0.0, "Pendidikan & pelatihan perkoperasian anggota dan pengurus", "cyan", 1),
+            ("Dana Rekreasi", 8.0, "DANA", 0, 0.0, 0.0, "Kegiatan rekreasi dan family gathering koperasi", "emerald", 2),
+            ("Dana Sosial", 6.0, "DANA", 0, 0.0, 0.0, "Bantuan sosial, santunan duka, dan kemasyarakatan", "rose", 3),
+            ("Dana Cadangan", 6.0, "DANA", 0, 0.0, 0.0, "Pemupukan modal sendiri dan cadangan risiko koperasi", "amber", 4),
+            ("Dana Risiko Kredit", 3.0, "DANA", 0, 0.0, 0.0, "Cadangan antisipasi risiko kredit macet pembiayaan", "orange", 5),
+            ("Dana Pensiun", 3.0, "DANA", 0, 0.0, 0.0, "Santunan dan jaminan masa purnatugas anggota", "blue", 6),
+            ("Insentif Pengurus & Pengawas", 32.0, "DANA", 0, 0.0, 0.0, "Jasa kinerja pengelolaan pengurus dan badan pengawas", "purple", 7),
+            ("SHU Bagian Anggota", 40.0, "ANGGOTA", 1, 50.0, 50.0, "Dibagikan ke anggota (50% Jasa Modal & 50% Jasa Pinjaman)", "indigo", 8)
+        ]
+        for th in [2025, 2026]:
+            for nama, persen, kat, is_agt, p_modal, p_pinj, ket, warna, urut in default_funds_template:
+                cursor.execute('''
+                INSERT INTO alokasi_dana_shu 
+                (tahun, nama_dana, persentase, kategori, is_bagian_anggota, porsi_jasa_modal, porsi_jasa_pinjaman, keterangan, warna_badge, urutan)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (th, nama, persen, kat, is_agt, p_modal, p_pinj, ket, warna, urut))
+
+    # Migration role: set superadmin for ketua & sysadmin
+    cursor.execute("UPDATE anggota SET role = 'superadmin' WHERE no_anggota = 'ADM-001' OR no_anggota = 'KST-007'")
+    cursor.execute("UPDATE anggota SET role = 'admin' WHERE (no_anggota = 'KST-002' OR no_anggota = 'KST-019') AND role != 'superadmin'")
+
     # Table Pengaturan Koperasi
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS pengaturan (

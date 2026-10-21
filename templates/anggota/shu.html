@@ -56,9 +56,9 @@
       <div class="flex items-center space-x-1.5">
         <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-calendar-days mr-1 text-purple-600"></i>Tahun:</span>
         <select name="tahun" onchange="this.form.submit()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-          <option value="2025" {% if current_tahun == 2025 %}selected{% endif %}>Tahun Buku 2025</option>
-          <option value="2026" {% if current_tahun == 2026 %}selected{% endif %}>Tahun Buku 2026</option>
-          <option value="2027" {% if current_tahun == 2027 %}selected{% endif %}>Tahun Buku 2027</option>
+          {% for th in daftar_tahun %}
+            <option value="{{ th }}" {% if current_tahun == th %}selected{% endif %}>Tahun Buku {{ th }}</option>
+          {% endfor %}
         </select>
       </div>
 

@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Manajemen Hak Akses Pengguna - KOSITAS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <h1 class="text-2xl font-extrabold text-slate-900">Manajemen Hak Akses & Level Pengguna</h1>
+        <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-shield-halved text-amber-600"></i> Khusus Superadmin
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Kelola dan delegasikan tingkatan hak akses bagi seluruh anggota dan pengurus KOSITAS BPS Kabupaten Tasikmalaya.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5 no-print">
+      <a href="{{ url_for('admin_anggota_list') }}" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-users text-blue-600"></i> Master Data Anggota
+      </a>
+      <a href="{{ url_for('admin_dana_shu') }}" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-sliders text-indigo-600"></i> Alokasi Dana RAT
+      </a>
+    </div>
+  </div>
+
+  <!-- MATRIKS HAK AKSES 3 LEVEL (SUPERADMIN, ADMIN, ANGGOTA) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Superadmin Card -->
+    <div class="p-5 bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-200 rounded-2xl space-y-3 relative overflow-hidden shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-amber-500 text-white shadow-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-crown text-[11px]"></i> SUPERADMIN
+        </span>
+        <span class="text-xl font-mono font-black text-amber-900">{{ role_stats.get('superadmin', 0) }} Akun</span>
+      </div>
+      <div>
+        <h3 class="text-xs font-extrabold text-amber-950 uppercase tracking-wide">Ketua Koperasi & Administrator Sistem</h3>
+        <p class="text-[11px] text-amber-800/90 mt-1 leading-relaxed">
+          Hak akses tertinggi: Berwenang penuh mengelola (tambah/edit/hapus) alokasi persentase dana RAT, mengatur hak akses semua pengguna, serta seluruh operasional koperasi.
+        </p>
+      </div>
+      <div class="pt-2 border-t border-amber-200/60 text-[10px] text-amber-900 flex flex-wrap gap-1 font-semibold">
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-amber-200">✓ CRUD Dana RAT</span>
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-amber-200">✓ Kelola Role</span>
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-amber-200">✓ Semua Menu</span>
+      </div>
+    </div>
+
+    <!-- Admin Card -->
+    <div class="p-5 bg-gradient-to-br from-indigo-50 to-blue-50/40 border border-indigo-200 rounded-2xl space-y-3 relative overflow-hidden shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-user-tie text-[11px]"></i> ADMIN
+        </span>
+        <span class="text-xl font-mono font-black text-indigo-900">{{ role_stats.get('admin', 0) }} Akun</span>
+      </div>
+      <div>
+        <h3 class="text-xs font-extrabold text-indigo-950 uppercase tracking-wide">Pengurus Harian (Bendahara & Sekretaris)</h3>
+        <p class="text-[11px] text-indigo-800/90 mt-1 leading-relaxed">
+          Hak operasional harian: Menjalankan entri simpanan, pinjaman, top-up, pelunasan, rekap potong gaji bulanan, dan monitoring dana RAT (mode pantau / read-only).
+        </p>
+      </div>
+      <div class="pt-2 border-t border-indigo-200/60 text-[10px] text-indigo-900 flex flex-wrap gap-1 font-semibold">
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-indigo-200">✓ Transaksi Simpan Pinjam</span>
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-indigo-200">✓ Rekap Payroll</span>
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-indigo-200">👁 Monitor Dana RAT</span>
+      </div>
+    </div>
+
+    <!-- Anggota Card -->
+    <div class="p-5 bg-gradient-to-br from-emerald-50 to-teal-50/40 border border-emerald-200 rounded-2xl space-y-3 relative overflow-hidden shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-700 text-white shadow-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-user text-[11px]"></i> ANGGOTA
+        </span>
+        <span class="text-xl font-mono font-black text-emerald-900">{{ role_stats.get('anggota', 0) }} Akun</span>
+      </div>
+      <div>
+        <h3 class="text-xs font-extrabold text-emerald-950 uppercase tracking-wide">Anggota Koperasi BPS Tasikmalaya</h3>
+        <p class="text-[11px] text-emerald-800/90 mt-1 leading-relaxed">
+          Portal mandiri: Melihat riwayat saldo simpanan pribadi, kartu cicilan pinjaman, slip pemotongan gaji, mengajukan pinjaman/pencairan online, dan melihat estimasi SHU pribadi.
+        </p>
+      </div>
+      <div class="pt-2 border-t border-emerald-200/60 text-[10px] text-emerald-900 flex flex-wrap gap-1 font-semibold">
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">✓ Portal Mandiri</span>
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">✓ Slip Pemotongan Gaji</span>
+        <span class="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">✓ Estimasi SHU</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAFTAR PENGGUNA & FORM PENGATURAN ROLE -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <!-- Filter Toolbar -->
+    <div class="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <form method="GET" class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div class="relative flex-grow sm:w-72">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          </span>
+          <input type="text" name="q" value="{{ keyword }}" placeholder="Cari nama, no anggota, NIP, jabatan..." 
+                 class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+        </div>
+
+        <select name="role" onchange="this.form.submit()" class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700">
+          <option value="Semua" {% if filter_role == 'Semua' %}selected{% endif %}>Semua Role ({{ members|length }})</option>
+          <option value="superadmin" {% if filter_role == 'superadmin' %}selected{% endif %}>Superadmin</option>
+          <option value="admin" {% if filter_role == 'admin' %}selected{% endif %}>Admin</option>
+          <option value="anggota" {% if filter_role == 'anggota' %}selected{% endif %}>Anggota</option>
+        </select>
+
+        <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition">
+          Filter
+        </button>
+
+        {% if keyword or filter_role != 'Semua' %}
+        <a href="{{ url_for('superadmin_manajemen_role') }}" class="px-3 py-2 text-slate-500 hover:text-red-600 text-xs font-semibold">
+          Reset Filter
+        </a>
+        {% endif %}
+      </form>
+
+      <div class="text-xs text-slate-500 font-medium">
+        Menampilkan: <strong class="text-slate-800">{{ members|length }} Pengguna</strong>
+      </div>
+    </div>
+
+    <!-- Table Users -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left border-collapse">
+        <thead class="bg-slate-50 text-slate-700 uppercase font-extrabold border-b border-slate-200 text-[11px]">
+          <tr>
+            <th class="py-3 px-4 text-center w-12">No</th>
+            <th class="py-3 px-4">Anggota & Identitas</th>
+            <th class="py-3 px-4">Jabatan BPS / Koperasi</th>
+            <th class="py-3 px-4 text-center">Status</th>
+            <th class="py-3 px-4 text-center">Role Saat Ini</th>
+            <th class="py-3 px-4 text-center w-60 no-print">Ubah Hak Akses</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for m in members %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ loop.index }}</td>
+            <td class="py-3.5 px-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs shrink-0
+                            {% if m.role == 'superadmin' %}bg-amber-100 text-amber-800 border border-amber-300
+                            {% elif m.role == 'admin' %}bg-indigo-100 text-indigo-800 border border-indigo-300
+                            {% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                  {{ m.nama[:2]|upper }}
+                </div>
+                <div>
+                  <div class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <span>{{ m.nama }}</span>
+                    {% if m.id == current_user.id %}
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Anda
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="text-[10px] text-slate-500 font-mono flex items-center gap-2 mt-0.5">
+                    <span>{{ m.no_anggota }}</span>
+                    {% if m.nip %}<span>• NIP: {{ m.nip }}</span>{% endif %}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <td class="py-3.5 px-4 font-semibold text-slate-700">
+              {{ m.jabatan or '-' }}
+            </td>
+
+            <td class="py-3.5 px-4 text-center">
+              {% if m.status == 'Aktif' %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Aktif</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Keluar</span>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 text-center">
+              {% if m.role == 'superadmin' %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">
+                  <i class="fa-solid fa-crown text-amber-600 text-[10px]"></i> Superadmin
+                </span>
+              {% elif m.role == 'admin' %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-100 text-indigo-900 border border-indigo-200 inline-flex items-center gap-1">
+                  <i class="fa-solid fa-user-tie text-indigo-600 text-[10px]"></i> Admin
+                </span>
+              {% else %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 inline-flex items-center gap-1">
+                  <i class="fa-solid fa-user text-slate-500 text-[10px]"></i> Anggota
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 text-center no-print">
+              {% if m.id == current_user.id %}
+                <span class="text-[11px] text-slate-400 italic">
+                  Akun aktif saat ini
+                </span>
+              {% else %}
+                <form method="POST" action="{{ url_for('superadmin_manajemen_role') }}" class="flex items-center justify-center gap-1.5" 
+                      onsubmit="return confirm('Ubah hak akses {{ m.nama }} menjadi ' + this.new_role.value.toUpperCase() + '?')">
+                  <input type="hidden" name="anggota_id" value="{{ m.id }}">
+                  <select name="new_role" class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800">
+                    <option value="superadmin" {% if m.role == 'superadmin' %}selected{% endif %}>Superadmin</option>
+                    <option value="admin" {% if m.role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="anggota" {% if m.role == 'anggota' %}selected{% endif %}>Anggota</option>
+                  </select>
+                  <button type="submit" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                    Simpan
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

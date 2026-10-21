@@ -102,8 +102,21 @@
           <span class="xs:hidden">Demo</span>
         </button>
         {% if current_user %}
-        <span class="hidden md:inline text-emerald-300 font-medium">
-          <i class="fa-regular fa-user mr-1"></i>{{ current_user.nama }} ({{ current_user.role|upper }})
+        <span class="hidden md:inline-flex items-center gap-1.5 font-medium">
+          {% if current_user.role == 'superadmin' %}
+            <span class="bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm flex items-center gap-1">
+              <i class="fa-solid fa-crown text-[9px]"></i>SUPERADMIN
+            </span>
+          {% elif current_user.role == 'admin' %}
+            <span class="bg-indigo-300 text-indigo-950 px-2 py-0.5 rounded-full text-[10px] font-extrabold shadow-sm flex items-center gap-1">
+              <i class="fa-solid fa-user-tie text-[9px]"></i>ADMIN
+            </span>
+          {% else %}
+            <span class="bg-emerald-700 text-emerald-100 px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-user text-[9px]"></i>ANGGOTA
+            </span>
+          {% endif %}
+          <span class="text-white">{{ current_user.nama }}</span>
         </span>
         {% endif %}
       </div>
@@ -133,8 +146,8 @@
 
         <!-- Desktop Navigation Links -->
         <nav class="hidden md:flex items-center space-x-1 lg:space-x-2">
-          {% if current_user and current_user.role == 'admin' %}
-            <!-- ADMIN MENU -->
+          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+            <!-- ADMIN & SUPERADMIN MENU -->
             <a href="{{ url_for('admin_dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition {% if request.endpoint == 'admin_dashboard' %}bg-emerald-50 text-emerald-800 font-bold{% else %}text-slate-600 hover:text-emerald-700 hover:bg-slate-50{% endif %}">
               <i class="fa-solid fa-gauge-high mr-1.5 text-emerald-600"></i>Dashboard
             </a>
@@ -154,14 +167,14 @@
               <i class="fa-solid fa-calendar-check mr-1.5 text-teal-600"></i>Rekap Bulanan
             </a>
 
-            <!-- Laporan Dropdown -->
+            <!-- Laporan & Alokasi RAT Dropdown -->
             <div class="relative group">
               <button class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-emerald-700 hover:bg-slate-50 inline-flex items-center gap-1 transition">
                 <i class="fa-solid fa-chart-pie mr-1 text-emerald-600"></i>
-                <span>Laporan RAT</span>
+                <span>Laporan & RAT</span>
                 <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
               </button>
-              <div class="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 hidden group-hover:block transition z-50">
+              <div class="absolute left-0 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-xl py-2 hidden group-hover:block transition z-50">
                 <a href="{{ url_for('admin_laporan_simpanan') }}" class="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800">
                   <i class="fa-solid fa-list-check mr-2 text-emerald-600"></i>Rekap Simpanan (Hal 14-15)
                 </a>
@@ -171,6 +184,19 @@
                 <a href="{{ url_for('admin_laporan_shu') }}" class="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800">
                   <i class="fa-solid fa-coins mr-2 text-amber-600"></i>Pembagian SHU (Hal 24-25)
                 </a>
+                <div class="border-t border-slate-100 my-1"></div>
+                <a href="{{ url_for('admin_dana_shu') }}" class="block px-4 py-2 text-xs font-bold text-slate-800 hover:bg-indigo-50 hover:text-indigo-900">
+                  {% if current_user.role == 'superadmin' %}
+                    <i class="fa-solid fa-sliders mr-2 text-amber-600"></i>Kelola Alokasi Dana RAT
+                  {% else %}
+                    <i class="fa-solid fa-chart-pie mr-2 text-indigo-600"></i>Monitoring Dana RAT
+                  {% endif %}
+                </a>
+                {% if current_user.role == 'superadmin' %}
+                <a href="{{ url_for('superadmin_manajemen_role') }}" class="block px-4 py-2 text-xs font-bold text-amber-900 bg-amber-50/50 hover:bg-amber-100">
+                  <i class="fa-solid fa-shield-halved mr-2 text-amber-600"></i>Manajemen Hak Akses / Role
+                </a>
+                {% endif %}
               </div>
             </div>
 
@@ -269,7 +295,7 @@
         <div class="space-y-1">
           <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">Menu Aplikasi</div>
           
-          {% if current_user.role == 'admin' %}
+          {% if current_user.role in ['admin', 'superadmin'] %}
             <a href="{{ url_for('admin_dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'admin_dashboard' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
               <i class="fa-solid fa-gauge-high w-5 text-emerald-600"></i> Dashboard Admin
             </a>
@@ -289,7 +315,7 @@
               <i class="fa-solid fa-calendar-check w-5 text-teal-600"></i> Rekap Potong Gaji
             </a>
             
-            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 pt-3 pb-1">Laporan Resmi RAT</div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 pt-3 pb-1">Laporan & Pengaturan RAT</div>
             <a href="{{ url_for('admin_laporan_simpanan') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50">
               <i class="fa-solid fa-list-check w-5 text-emerald-600"></i> Rekap Simpanan (Hal 14)
             </a>
@@ -299,6 +325,14 @@
             <a href="{{ url_for('admin_laporan_shu') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50">
               <i class="fa-solid fa-coins w-5 text-amber-600"></i> Pembagian SHU (Hal 24)
             </a>
+            <a href="{{ url_for('admin_dana_shu') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 hover:bg-indigo-50">
+              <i class="fa-solid fa-sliders w-5 text-amber-600"></i> Alokasi Dana RAT
+            </a>
+            {% if current_user.role == 'superadmin' %}
+            <a href="{{ url_for('superadmin_manajemen_role') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100">
+              <i class="fa-solid fa-shield-halved w-5 text-amber-600"></i> Manajemen Hak Akses
+            </a>
+            {% endif %}
 
           {% else %}
             <a href="{{ url_for('anggota_dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition {% if request.endpoint == 'anggota_dashboard' %}bg-emerald-50 text-emerald-800{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
@@ -461,37 +495,54 @@
       </div>
 
       <div class="p-6 max-h-[75vh] overflow-y-auto space-y-4">
-        <!-- Pengurus / Admin section -->
+        <!-- Superadmin section -->
         <div>
-          <h4 class="text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Akun Administrator & Pengurus</h4>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs uppercase font-black tracking-wider text-amber-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-crown text-amber-500"></i> Akun Tingkat Superadmin
+            </h4>
+            <span class="text-[10px] text-slate-400">Hak Akses Penuh & Kelola Dana RAT</span>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <a href="{{ url_for('switch_user', user_id=999) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+            <a href="{{ url_for('switch_user', user_id=7) }}" class="p-3 rounded-xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 flex items-center justify-between group transition">
               <div>
-                <span class="font-bold text-xs text-emerald-950 block">Administrator KOSITAS</span>
-                <span class="text-[11px] text-emerald-700">ADM-001 • Pengurus Utama</span>
+                <span class="font-extrabold text-xs text-amber-950 block">Gilang Abdul Aziz, SE, MP</span>
+                <span class="text-[11px] text-amber-800">KST-007 • Ketua Koperasi</span>
               </div>
-              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ADMIN</span>
+              <span class="text-xs font-black bg-amber-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">SUPERADMIN</span>
             </a>
-            <a href="{{ url_for('switch_user', user_id=7) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+            <a href="{{ url_for('switch_user', user_id=999) }}" class="p-3 rounded-xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 flex items-center justify-between group transition">
               <div>
-                <span class="font-bold text-xs text-emerald-950 block">Gilang Abdul Aziz, SE, MP</span>
-                <span class="text-[11px] text-emerald-700">KST-007 • Ketua Koperasi</span>
+                <span class="font-extrabold text-xs text-amber-950 block">Administrator KOSITAS</span>
+                <span class="text-[11px] text-amber-800">ADM-001 • Pengurus Utama</span>
               </div>
-              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">KETUA</span>
+              <span class="text-xs font-black bg-amber-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">SUPERADMIN</span>
             </a>
-            <a href="{{ url_for('switch_user', user_id=2) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+          </div>
+        </div>
+
+        <!-- Admin section -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs uppercase font-bold tracking-wider text-indigo-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-user-tie text-indigo-500"></i> Akun Tingkat Admin
+            </h4>
+            <span class="text-[10px] text-slate-400">Pengurus Operasional Harian</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <a href="{{ url_for('switch_user', user_id=19) }}" class="p-3 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 flex items-center justify-between group transition">
               <div>
-                <span class="font-bold text-xs text-emerald-950 block">Darojatun</span>
-                <span class="text-[11px] text-emerald-700">KST-002 • Sekretaris</span>
+                <span class="font-bold text-xs text-indigo-950 block">Erlina Hardiyanti, A.Md</span>
+                <span class="text-[11px] text-indigo-700">KST-019 • Bendahara</span>
               </div>
-              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">SEKRETARIS</span>
+              <span class="text-xs font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full shadow-sm">ADMIN</span>
             </a>
-            <a href="{{ url_for('switch_user', user_id=19) }}" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 flex items-center justify-between group transition">
+            <a href="{{ url_for('switch_user', user_id=2) }}" class="p-3 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 flex items-center justify-between group transition">
               <div>
-                <span class="font-bold text-xs text-emerald-950 block">Erlina Hardiyanti, A.Md</span>
-                <span class="text-[11px] text-emerald-700">KST-019 • Bendahara</span>
+                <span class="font-bold text-xs text-indigo-950 block">Darojatun</span>
+                <span class="text-[11px] text-indigo-700">KST-002 • Sekretaris</span>
               </div>
-              <span class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">BENDAHARA</span>
+              <span class="text-xs font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full shadow-sm">ADMIN</span>
             </a>
           </div>
         </div>

@@ -78,19 +78,40 @@ Format laporan presisi persis Buku Laporan RAT 2025:
 - **Daftar Pembagian SHU Anggota** (RAT Hal. 13 & 24-25) - Jasa Modal 50% & Jasa Pinjaman 50%
 - Semua laporan dilengkapi fitur **Unduh Excel (.xlsx)** dan **Cetak PDF**.
 
+### 8. 🛡️ Tiga Level Hak Akses Pengguna (Superadmin, Admin, Anggota)
+1. **Superadmin (Ketua Koperasi & SysAdmin)**:
+   - Akun: Gilang Abdul Aziz (`KST-007`) & Administrator (`ADM-001`).
+   - Wewenang tertinggi: Akses penuh ke seluruh menu sistem, form **Tambah, Edit, Hapus Alokasi Persentase Dana RAT**, duplikasi konfigurasi tahunan, serta **Manajemen Level Hak Akses / Role** seluruh anggota.
+2. **Admin (Pengurus Operasional Harian - Bendahara & Sekretaris)**:
+   - Akun: Erlina Hardiyanti (`KST-019`) & Darojatun (`KST-002`).
+   - Wewenang operasional: Mengelola data anggota, transaksi simpanan/pinjaman, eksekusi rekap bulanan, dan **Mode Monitoring / Pemantauan Dana RAT (Read-Only)**.
+3. **Anggota (Seluruh Anggota Koperasi)**:
+   - Akun: 35 Anggota Pegawai BPS Kab. Tasikmalaya.
+   - Portal Mandiri: Melihat saldo simpanan, komitmen tabungan hari raya, simulasi & pengajuan pinjaman/pencairan online, slip gaji bulanan, dan estimasi SHU pribadi.
+
+### 9. 📈 Pengaturan & Monitoring Dinamis Dana-Dana SHU Hasil RAT
+- **Fleksibel per Tahun Buku**: Persentase dana cadangan, sosial, pendidikan, rekreasi, risiko kredit, pensiun, insentif pengurus, dan SHU anggota dapat diatur berbeda setiap tahun sesuai hasil mufakat RAT.
+- **Monitoring Komposisi 100%**: Indikator progress bar visual otomatis memvalidasi apakah akumulasi dana pas 100.0%, kurang, atau melebihi batas.
+- **Simulasi Nominal Real-time**: Kalkulasi otomatis estimasi nominal rupiah per pos alokasi berdasarkan SHU Bruto yang dimasukkan.
+- **Fitur 1-Klik Salin Tahun**: Kemudahan menduplikasi pengaturan alokasi dana dari tahun sebelumnya ke tahun buku baru.
+
 ---
 
 ## ⚡ Cara Menjalankan & Mengakses
 
 Server saat ini **sudah aktif berjalan di background**:
-- **URL Akses**: [http://localhost:5000](http://localhost:5000) atau [http://127.0.0.1:5000](http://127.0.0.1:5000)
+- **Akses Komputer Lokal**: [http://localhost:5000](http://localhost:5000) atau [http://127.0.0.1:5000](http://127.0.0.1:5000)
+- **Akses HP / Jaringan Kantor**: `http://192.168.200.9:5000`
 
-### Akun Login Demo:
-1. **Administrator / Pengurus**:
-   - Username: `admin`
-   - Password: `admin` (atau `123456`)
-2. **Akun Anggota**:
-   - Dapat login menggunakan **No Anggota** (contoh: `KST-007` untuk Gilang Abdul Aziz, `KST-019` untuk Erlina Hardiyanti, `KST-016` untuk Irwan Setiawan, dll)
+### Akun Login Demo 3 Level:
+1. **Level Superadmin**:
+   - Akun: Gilang Abdul Aziz (`KST-007`) atau Administrator (`ADM-001`)
+   - Password: `admin` / `123456`
+2. **Level Admin (Operasional)**:
+   - Akun: Erlina Hardiyanti (`KST-019`) atau Darojatun (`KST-002`)
    - Password: `123456`
-3. **Fitur Instant Switcher**:
-   - Tersedia tombol **"Ganti Akun Demo"** di bilah atas (topbar) untuk beralih instan antara Admin dan anggota manapun dengan 1 klik tanpa harus mengetik password!
+3. **Level Anggota**:
+   - Contoh: Dama Herdiaman (`KST-001`), Dede Yusuf (`KST-004`), dll.
+   - Password: `123456`
+4. **Fitur Instant Switcher**:
+   - Tersedia tombol **"Ganti Akun Demo"** di bilah atas (topbar) dan halaman login untuk beralih instan antar level hak akses dengan 1 klik!

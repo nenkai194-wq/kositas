@@ -18,16 +18,30 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2.5 no-print">
-      <!-- Input Simulasi SHU Bruto -->
-      <form method="GET" class="flex items-center gap-1.5">
-        <span class="text-xs font-bold text-slate-500">SHU Bruto:</span>
-        <input type="number" name="total_shu" value="{{ shu.total_shu_bruto }}" step="1000" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 w-36 shadow-sm">
-        <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold">
+      <!-- Input Simulasi SHU Bruto & Tahun Buku -->
+      <form method="GET" class="flex flex-wrap items-center gap-1.5">
+        <select name="tahun" onchange="this.form.submit()" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-sm">
+          {% for th in daftar_tahun %}
+            <option value="{{ th }}" {% if th == selected_tahun %}selected{% endif %}>Tahun {{ th }}</option>
+          {% endfor %}
+        </select>
+        <span class="text-xs font-bold text-slate-500">SHU:</span>
+        <input type="number" name="total_shu" value="{{ shu.total_shu_bruto }}" step="1000" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 w-32 shadow-sm">
+        <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow-sm">
           Hitung
         </button>
       </form>
 
-      <a href="{{ url_for('admin_laporan_shu_export') }}" 
+      <a href="{{ url_for('admin_dana_shu', tahun=selected_tahun) }}" 
+         class="px-3.5 py-2 {% if current_user.role == 'superadmin' %}bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300{% else %}bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200{% endif %} rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        {% if current_user.role == 'superadmin' %}
+          <i class="fa-solid fa-sliders text-amber-600"></i> Kelola Dana RAT
+        {% else %}
+          <i class="fa-solid fa-chart-pie text-indigo-600"></i> Monitor Dana RAT
+        {% endif %}
+      </a>
+
+      <a href="{{ url_for('admin_laporan_shu_export', tahun=selected_tahun) }}" 
          class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-file-excel text-emerald-600"></i> Unduh Excel
       </a>
@@ -43,53 +57,33 @@
       <div>
         <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
           <i class="fa-solid fa-chart-pie text-amber-600"></i>
-          Komposisi Pembagian SHU Bruto (AD/ART KOSITAS)
+          Komposisi Pembagian SHU Bruto (AD/ART KOSITAS - Tahun {{ selected_tahun }})
         </h2>
         <p class="text-xs text-slate-500">Total SHU Bruto Koperasi: <span class="font-bold text-slate-800 font-mono">{{ shu.total_shu_bruto|rupiah }}</span></p>
       </div>
       <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-right">
-        <span class="text-[10px] uppercase font-bold text-amber-800 block">Total SHU Bagian Anggota (40%)</span>
+        <span class="text-[10px] uppercase font-bold text-amber-800 block">Total SHU Bagian Anggota ({{ (shu.alokasi.shu_bagian_anggota / shu.total_shu_bruto * 100.0)|round(0)|int if shu.total_shu_bruto > 0 else 40 }}%)</span>
         <span class="text-base font-extrabold text-amber-950 font-mono">{{ shu.alokasi.shu_bagian_anggota|rupiah }}</span>
       </div>
     </div>
 
-    <!-- Cards Dana-dana -->
+    <!-- Cards Dana-dana Dinamis -->
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Dana Pendidikan (2%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_pendidikan|rupiah }}</span>
-      </div>
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Dana Rekreasi (8%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_rekreasi|rupiah }}</span>
-      </div>
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Dana Sosial (6%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_sosial|rupiah }}</span>
-      </div>
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Dana Cadangan (6%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_cadangan|rupiah }}</span>
-      </div>
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Dana Risiko Kredit (3%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_resiko_kredit|rupiah }}</span>
-      </div>
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Dana Pensiun (3%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.dana_pensiun|rupiah }}</span>
-      </div>
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-        <span class="text-[10px] text-slate-400 block font-semibold">Insentif Pengurus (32%)</span>
-        <span class="font-bold text-slate-800 font-mono">{{ shu.alokasi.insentif_pengurus|rupiah }}</span>
-      </div>
+      {% for dana in shu.dana_list %}
+        {% if not dana.is_bagian_anggota %}
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <span class="text-[10px] text-slate-400 block font-semibold truncate" title="{{ dana.nama_dana }}">{{ dana.nama_dana }} ({{ dana.persentase }}%)</span>
+          <span class="font-bold text-slate-800 font-mono block mt-0.5">{{ dana.nominal|rupiah }}</span>
+        </div>
+        {% endif %}
+      {% endfor %}
     </div>
 
-    <!-- Porsi Anggota: Modal 50% & Pinjaman 50% -->
+    <!-- Porsi Anggota: Modal & Pinjaman -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
       <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
         <div>
-          <span class="text-xs font-bold text-emerald-950 block">Jasa Modal (50% Bagian Anggota)</span>
+          <span class="text-xs font-bold text-emerald-950 block">Jasa Modal (Bagian Anggota)</span>
           <span class="text-[11px] text-emerald-700">Dibagi proporsional berdasarkan total simpanan</span>
         </div>
         <span class="text-sm font-extrabold text-emerald-900 font-mono">{{ shu.alokasi.jasa_modal_total|rupiah }}</span>
@@ -97,7 +91,7 @@
 
       <div class="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between">
         <div>
-          <span class="text-xs font-bold text-indigo-950 block">Jasa Pinjaman (50% Bagian Anggota)</span>
+          <span class="text-xs font-bold text-indigo-950 block">Jasa Pinjaman (Bagian Anggota)</span>
           <span class="text-[11px] text-indigo-700">Dibagi proporsional berdasarkan jasa kredit yang dibayar</span>
         </div>
         <span class="text-sm font-extrabold text-indigo-900 font-mono">{{ shu.alokasi.jasa_pinjaman_total|rupiah }}</span>

@@ -116,8 +116,23 @@ def admin_required(f):
             flash('Silakan login terlebih dahulu.', 'warning')
             return redirect(url_for('login'))
         user = get_current_user()
-        if not user or user.get('role') != 'admin':
+        if not user or user.get('role') not in ['admin', 'superadmin']:
             flash('Akses ditolak! Halaman ini hanya untuk Pengurus / Administrator KOSITAS.', 'danger')
+            return redirect(url_for('anggota_dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def superadmin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Silakan login terlebih dahulu.', 'warning')
+            return redirect(url_for('login'))
+        user = get_current_user()
+        if not user or user.get('role') != 'superadmin':
+            flash('Akses ditolak! Fitur konfigurasi ini hanya untuk Superadmin (Ketua Koperasi / SysAdmin).', 'danger')
+            if user and user.get('role') == 'admin':
+                return redirect(url_for('admin_dashboard'))
             return redirect(url_for('anggota_dashboard'))
         return f(*args, **kwargs)
     return decorated_function
@@ -127,7 +142,7 @@ def admin_required(f):
 def index():
     if 'user_id' in session:
         user = get_current_user()
-        if user and user.get('role') == 'admin':
+        if user and user.get('role') in ['admin', 'superadmin']:
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('anggota_dashboard'))
     return redirect(url_for('login'))
@@ -138,17 +153,21 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
 
-        # Admin login by username 'admin'
-        if username.lower() == 'admin':
+        # Admin / Superadmin login by username 'admin' or 'superadmin'
+        if username.lower() in ['admin', 'superadmin']:
             conn = database.get_db()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM anggota WHERE role = 'admin' AND (no_anggota = 'ADM-001' OR role = 'admin') LIMIT 1")
+            target_role = 'superadmin' if username.lower() == 'superadmin' else 'admin'
+            cursor.execute("SELECT * FROM anggota WHERE role = ? LIMIT 1", (target_role,))
             row = cursor.fetchone()
+            if not row:
+                cursor.execute("SELECT * FROM anggota WHERE role IN ('admin', 'superadmin') LIMIT 1")
+                row = cursor.fetchone()
             conn.close()
-            if row and (password == row['password'] or password == 'admin' or password == '123456'):
+            if row and (password in [row['password'], 'admin', '123456']):
                 session['user_id'] = row['id']
-                session['role'] = 'admin'
-                flash(f"Selamat datang, {row['nama']} (Pengurus KOSITAS)!", 'success')
+                session['role'] = row['role']
+                flash(f"Selamat datang, {row['nama']} (Akses: {row['role'].upper()})!", 'success')
                 return redirect(url_for('admin_dashboard'))
         
         # Anggota login by No Anggota or NIP or Nama
@@ -166,7 +185,7 @@ def login():
             session['user_id'] = row['id']
             session['role'] = row['role']
             flash(f"Selamat datang, {row['nama']}!", 'success')
-            if row['role'] == 'admin':
+            if row['role'] in ['admin', 'superadmin']:
                 return redirect(url_for('admin_dashboard'))
             return redirect(url_for('anggota_dashboard'))
 
@@ -192,7 +211,7 @@ def switch_user(user_id):
         session['user_id'] = user['id']
         session['role'] = user['role']
         flash(f"Beralih akun sebagai: {user['nama']} ({user['jabatan']} - Role: {user['role'].upper()})", 'info')
-        if user['role'] == 'admin':
+        if user['role'] in ['admin', 'superadmin']:
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('anggota_dashboard'))
     flash('User tidak ditemukan!', 'danger')
@@ -667,24 +686,180 @@ def admin_laporan_piutang_export():
 @app.route('/admin/laporan/shu')
 @admin_required
 def admin_laporan_shu():
+    tahun = request.args.get('tahun', default=None, type=int)
+    daftar_tahun = models.get_daftar_tahun_dana_shu()
+    if tahun is None:
+        tahun = daftar_tahun[0] if daftar_tahun else 2026
+
     total_shu_input = request.args.get('total_shu', type=float)
     if total_shu_input and total_shu_input > 0:
-        shu_data = models.hitung_shu_koperasi(total_shu_input)
+        shu_data = models.hitung_shu_koperasi(total_shu_input, tahun=tahun)
     else:
-        shu_data = models.hitung_shu_koperasi()
+        shu_data = models.hitung_shu_koperasi(tahun=tahun)
 
-    return render_template('admin/laporan_shu.html', shu=shu_data)
+    return render_template('admin/laporan_shu.html', shu=shu_data, daftar_tahun=daftar_tahun, selected_tahun=tahun)
 
 @app.route('/admin/laporan/shu/export-excel')
 @admin_required
 def admin_laporan_shu_export():
-    shu_data = models.hitung_shu_koperasi()
+    tahun = request.args.get('tahun', default=2026, type=int)
+    shu_data = models.hitung_shu_koperasi(tahun=tahun)
     output = excel_service.export_shu_excel(shu_data)
     return send_file(
         output,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         as_attachment=True,
-        download_name="Daftar_Pembagian_SHU_KOSITAS.xlsx"
+        download_name=f"Daftar_Pembagian_SHU_KOSITAS_{tahun}.xlsx"
+    )
+
+# --- PENGATURAN & MONITORING DANA-DANA SHU HASIL RAT ---
+@app.route('/admin/dana-shu')
+@admin_required
+def admin_dana_shu():
+    daftar_tahun = models.get_daftar_tahun_dana_shu()
+    tahun = request.args.get('tahun', default=None, type=int)
+    if tahun is None:
+        tahun = daftar_tahun[0] if daftar_tahun else 2026
+
+    total_shu_input = request.args.get('total_shu', default=38706812.69, type=float)
+    if not total_shu_input or total_shu_input <= 0:
+        total_shu_input = 38706812.69
+
+    shu_data = models.hitung_shu_koperasi(total_shu_input, tahun=tahun)
+    current_user = get_current_user()
+    is_superadmin = (current_user.get('role') == 'superadmin')
+
+    return render_template(
+        'admin/dana_shu.html',
+        shu=shu_data,
+        tahun=tahun,
+        daftar_tahun=daftar_tahun,
+        total_shu=total_shu_input,
+        is_superadmin=is_superadmin
+    )
+
+@app.route('/superadmin/dana-shu/tambah', methods=['POST'])
+@superadmin_required
+def superadmin_dana_shu_tambah():
+    tahun = request.form.get('tahun', default=2026, type=int)
+    kat = request.form.get('kategori', 'DANA')
+    data = {
+        'tahun': tahun,
+        'nama_dana': request.form.get('nama_dana'),
+        'persentase': request.form.get('persentase', type=float),
+        'kategori': kat,
+        'is_bagian_anggota': 1 if kat == 'ANGGOTA' else 0,
+        'porsi_jasa_modal': request.form.get('porsi_jasa_modal', default=50.0, type=float),
+        'porsi_jasa_pinjaman': request.form.get('porsi_jasa_pinjaman', default=50.0, type=float),
+        'keterangan': request.form.get('keterangan', ''),
+        'warna_badge': request.form.get('warna_badge', 'slate'),
+        'urutan': request.form.get('urutan', default=99, type=int)
+    }
+    models.tambah_dana_shu(data)
+    flash(f"Alokasi '{data['nama_dana']}' ({data['persentase']}%) berhasil ditambahkan untuk Tahun Buku {tahun}.", 'success')
+    return redirect(url_for('admin_dana_shu', tahun=tahun))
+
+@app.route('/superadmin/dana-shu/edit/<int:id>', methods=['POST'])
+@superadmin_required
+def superadmin_dana_shu_edit(id):
+    tahun = request.form.get('tahun', default=2026, type=int)
+    kat = request.form.get('kategori', 'DANA')
+    data = {
+        'tahun': tahun,
+        'nama_dana': request.form.get('nama_dana'),
+        'persentase': request.form.get('persentase', type=float),
+        'kategori': kat,
+        'is_bagian_anggota': 1 if kat == 'ANGGOTA' else 0,
+        'porsi_jasa_modal': request.form.get('porsi_jasa_modal', default=50.0, type=float),
+        'porsi_jasa_pinjaman': request.form.get('porsi_jasa_pinjaman', default=50.0, type=float),
+        'keterangan': request.form.get('keterangan', ''),
+        'warna_badge': request.form.get('warna_badge', 'slate'),
+        'urutan': request.form.get('urutan', default=99, type=int)
+    }
+    models.update_dana_shu(id, data)
+    flash(f"Perubahan alokasi '{data['nama_dana']}' berhasil disimpan.", 'success')
+    return redirect(url_for('admin_dana_shu', tahun=tahun))
+
+@app.route('/superadmin/dana-shu/hapus/<int:id>', methods=['POST'])
+@superadmin_required
+def superadmin_dana_shu_hapus(id):
+    tahun = request.form.get('tahun', default=2026, type=int)
+    dana = models.get_dana_shu_by_id(id)
+    nama = dana['nama_dana'] if dana else f"ID {id}"
+    models.hapus_dana_shu(id)
+    flash(f"Alokasi '{nama}' berhasil dihapus dari Tahun Buku {tahun}.", 'info')
+    return redirect(url_for('admin_dana_shu', tahun=tahun))
+
+@app.route('/superadmin/dana-shu/salin-tahun', methods=['POST'])
+@superadmin_required
+def superadmin_dana_shu_salin():
+    tahun_asal = request.form.get('tahun_asal', type=int)
+    tahun_tujuan = request.form.get('tahun_tujuan', type=int)
+    if not tahun_asal or not tahun_tujuan or tahun_asal == tahun_tujuan:
+        flash('Tahun asal dan tujuan harus valid dan berbeda!', 'warning')
+        return redirect(url_for('admin_dana_shu', tahun=tahun_asal))
+    
+    success, msg = models.salin_alokasi_dana_tahun(tahun_asal, tahun_tujuan)
+    if success:
+        flash(msg, 'success')
+    else:
+        flash(msg, 'danger')
+    return redirect(url_for('admin_dana_shu', tahun=tahun_tujuan))
+
+# --- MANAJEMEN HAK AKSES & LEVEL ROLE (SUPERADMIN ONLY) ---
+@app.route('/superadmin/manajemen-role', methods=['GET', 'POST'])
+@superadmin_required
+def superadmin_manajemen_role():
+    current_user = get_current_user()
+    if request.method == 'POST':
+        anggota_id = request.form.get('anggota_id', type=int)
+        new_role = request.form.get('new_role', '').strip().lower()
+
+        # Pencegahan: Superadmin tidak boleh mendegradasi akunnya sendiri agar tidak terkunci
+        if anggota_id == current_user['id'] and new_role != 'superadmin':
+            flash('Anda tidak dapat mengubah level role akun Anda sendiri saat sedang login!', 'danger')
+            return redirect(url_for('superadmin_manajemen_role'))
+
+        target_user = models.get_anggota_by_id(anggota_id)
+        if not target_user:
+            flash('Anggota tidak ditemukan!', 'warning')
+            return redirect(url_for('superadmin_manajemen_role'))
+
+        success, msg = models.update_user_role(anggota_id, new_role)
+        if success:
+            flash(f"Hak akses {target_user['nama']} ({target_user['no_anggota']}) berhasil diubah menjadi: {new_role.upper()}.", 'success')
+        else:
+            flash(msg, 'danger')
+        return redirect(url_for('superadmin_manajemen_role'))
+
+    # GET request
+    keyword = request.args.get('q', '').strip()
+    filter_role = request.args.get('role', 'Semua')
+
+    all_members = models.get_all_anggota(status_filter='Semua')
+    
+    # Filter by keyword
+    if keyword:
+        all_members = [
+            m for m in all_members 
+            if keyword.lower() in m['nama'].lower() 
+            or keyword.lower() in m['no_anggota'].lower() 
+            or keyword.lower() in (m['jabatan'] or '').lower()
+            or keyword.lower() in (m['nip'] or '').lower()
+        ]
+
+    # Filter by role
+    if filter_role and filter_role != 'Semua':
+        all_members = [m for m in all_members if m['role'] == filter_role.lower()]
+
+    role_stats = models.get_user_roles_stats()
+
+    return render_template(
+        'admin/manajemen_role.html',
+        members=all_members,
+        role_stats=role_stats,
+        keyword=keyword,
+        filter_role=filter_role
     )
 
 # --- APPROVAL PENGAJUAN ONLINE ANGGOTA ---
@@ -952,13 +1127,15 @@ def anggota_shu():
     else:
         shu_est = models.hitung_estimasi_shu_anggota(user['id'], tahun=tahun, bulan_ke=bulan)
 
+    daftar_tahun = models.get_daftar_tahun_dana_shu()
     return render_template(
         'anggota/shu.html',
         member=user,
         shu=shu_est,
         current_tahun=tahun,
         current_bulan=bulan,
-        current_mode=mode
+        current_mode=mode,
+        daftar_tahun=daftar_tahun
     )
 
 # ----------------- PRINT SLIP & KUITANSI RESMI -----------------
@@ -966,8 +1143,8 @@ def anggota_shu():
 @login_required
 def cetak_slip_bulanan(anggota_id, bulan_buku):
     user = get_current_user()
-    # Anggota hanya bisa cetak slip miliknya sendiri kecuali admin
-    if user['role'] != 'admin' and user['id'] != anggota_id:
+    # Anggota hanya bisa cetak slip miliknya sendiri kecuali admin & superadmin
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != anggota_id:
         abort(403)
 
     target_member = models.get_anggota_by_id(anggota_id)
@@ -1034,7 +1211,7 @@ def cetak_kuitansi_simpanan(id):
 
     trx = dict(trx)
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != trx['anggota_id']:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != trx['anggota_id']:
         abort(403)
 
     return render_template('print/kuitansi_simpanan.html', trx=trx)
@@ -1058,7 +1235,7 @@ def cetak_kuitansi_angsuran(id):
 
     ang = dict(ang)
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != ang['anggota_id']:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != ang['anggota_id']:
         abort(403)
 
     return render_template('print/kuitansi_angsuran.html', angsuran=ang)
@@ -1067,7 +1244,7 @@ def cetak_kuitansi_angsuran(id):
 @login_required
 def cetak_slip_tabungan(anggota_id, bulan_buku):
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != anggota_id:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != anggota_id:
         abort(403)
 
     target_member = models.get_anggota_by_id(anggota_id)
@@ -1115,7 +1292,7 @@ def cetak_slip_pelunasan(id):
 
     loan = dict(loan)
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != loan['anggota_id']:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != loan['anggota_id']:
         abort(403)
 
     return render_template('print/slip_pelunasan.html', loan=loan)
@@ -1140,7 +1317,7 @@ def cetak_slip_topup(id):
 
     loan = dict(loan)
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != loan['anggota_id']:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != loan['anggota_id']:
         abort(403)
 
     # Dana Bersih Diterima = Plafon Baru - Sisa Pokok Lama - Provisi - DRK
@@ -1163,7 +1340,7 @@ def cetak_slip_pembagian_tabungan(id):
     if not komitmen:
         abort(404)
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != komitmen['anggota_id']:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != komitmen['anggota_id']:
         abort(403)
     return render_template('print/slip_pembagian_tabungan.html', komitmen=komitmen)
 
@@ -1171,7 +1348,7 @@ def cetak_slip_pembagian_tabungan(id):
 @login_required
 def cetak_form_shu(anggota_id):
     user = get_current_user()
-    if user['role'] != 'admin' and user['id'] != anggota_id:
+    if user['role'] not in ['admin', 'superadmin'] and user['id'] != anggota_id:
         abort(403)
 
     now = datetime.now()
